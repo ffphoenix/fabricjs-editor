@@ -1,0 +1,32 @@
+version: '3.5'
+
+services:
+  db:
+    image: postgres:${POSTGRES_VERSION:-16}-alpine
+    environment:
+      - POSTGRES_PASSWORD=test123qwerty
+      - POSTGRES_DB=main
+    container_name: postgres
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-d", "${POSTGRES_DB:-main}", "-U", "${POSTGRES_USER:-postgres}" ]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - ../pgdata:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+
+  app:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+    container_name: gateway
+    environment:
+      - PORT=${PORT}
+    ports:
+      - '3000:3000'
+    depends_on:
+      - db
+    volumes:
+      - .:/app

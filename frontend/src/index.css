@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@import 'primeicons/primeicons.css';
+@import 'primereact/resources/themes/lara-light-blue/theme.css';
+
+
+@custom-variant dark (&:is(.dark *));
+
+.grid {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+html {
+    font-size: 14px;
+}
