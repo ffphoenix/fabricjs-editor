@@ -3,12 +3,14 @@ import * as fabric from "fabric";
 import ToolMenu from "./components/ToolMenu";
 import "./style.css";
 
-type Tool = "select" | "pen" | "rect" | "circle" | "text";
+type Tool = "select" | "pen" | "rect" | "circle" | "text" | "hand";
 
 const GameScenePage: React.FC = () => {
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
+  const wheelHandlerRef = useRef<((e: fabric.IEvent<WheelEvent>) => void) | null>(null);
+  const isPanningRef = useRef<boolean>(false);
 
   const [tool, setTool] = useState<Tool>("select");
   const [strokeColor, setStrokeColor] = useState<string>("#222222");
@@ -47,10 +49,61 @@ const GameScenePage: React.FC = () => {
 
     return () => {
       window.removeEventListener("resize", resize);
+      // detach wheel handler if attached
+      if (wheelHandlerRef.current) {
+        // @ts-expect-error fabric event typing
+        canvas.off("mouse:wheel", wheelHandlerRef.current);
+      }
       canvas.dispose();
       fabricRef.current = null;
     };
   }, []);
+
+  // Zoom handlers (mouse wheel and programmatic)
+  useEffect(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+
+    const MIN_ZOOM = 0.2;
+    const MAX_ZOOM = 5;
+
+    const onWheel = (opt: any) => {
+      const evt: WheelEvent = opt.e as WheelEvent;
+      let zoom = canvas.getZoom();
+      const delta = evt.deltaY;
+      const factor = 0.999 ** delta; // smooth zoom
+      zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
+      const point = new fabric.Point(evt.offsetX, evt.offsetY);
+      canvas.zoomToPoint(point, zoom);
+      evt.preventDefault();
+      evt.stopPropagation();
+    };
+
+    wheelHandlerRef.current = onWheel;
+    canvas.on("mouse:wheel", onWheel as unknown as fabric.IEventHandler<WheelEvent>);
+
+    return () => {
+      if (wheelHandlerRef.current) {
+        // @ts-expect-error fabric event typing
+        canvas.off("mouse:wheel", wheelHandlerRef.current);
+      }
+    };
+  }, []);
+
+  const zoomByFactor = (factor: number) => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const MIN_ZOOM = 0.2;
+    const MAX_ZOOM = 5;
+    const current = canvas.getZoom();
+    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, current * factor));
+    const center = canvas.getCenter();
+    const point = new fabric.Point(center.left, center.top);
+    canvas.zoomToPoint(point, next);
+  };
+
+  const handleZoomIn = () => zoomByFactor(1.2);
+  const handleZoomOut = () => zoomByFactor(1 / 1.2);
 
   // Update tool specifics (drawing mode, selection, brush)
   useEffect(() => {
@@ -59,8 +112,18 @@ const GameScenePage: React.FC = () => {
 
     // reset modes
     canvas.isDrawingMode = false;
-    canvas.selection = tool === "select";
-    canvas.forEachObject((obj) => obj.set({ selectable: tool === "select" }));
+    const selectionEnabled = tool === "select";
+    canvas.selection = selectionEnabled;
+    canvas.forEachObject((obj) => obj.set({ selectable: selectionEnabled }));
+
+    // cursors for hand tool
+    if (tool === "hand") {
+      canvas.defaultCursor = "grab";
+      canvas.hoverCursor = "grab";
+    } else {
+      canvas.defaultCursor = "default";
+      canvas.hoverCursor = "move"; // fabric default-ish for objects
+    }
 
     if (tool === "pen") {
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
@@ -80,6 +143,13 @@ const GameScenePage: React.FC = () => {
 
     const onMouseDown = (opt: fabric.TPointerEventInfo<MouseEvent>) => {
       if (!canvas) return;
+      // Hand tool: start panning
+      if (tool === "hand") {
+        isPanningRef.current = true;
+        canvas.setCursor("grabbing");
+        canvas.requestRenderAll();
+        return;
+      }
       const pointer = canvas.getPointer(opt.e);
       drawingState.current.origin = new fabric.Point(pointer.x, pointer.y);
 
@@ -135,6 +205,17 @@ const GameScenePage: React.FC = () => {
 
     const onMouseMove = (opt: fabric.TPointerEventInfo<MouseEvent>) => {
       if (!canvas) return;
+      // Hand tool panning behavior
+      if (tool === "hand" && isPanningRef.current) {
+        const evt = opt.e as unknown as MouseEvent;
+        const vpt = canvas.viewportTransform || fabric.iMatrix.concat();
+        // movementX/Y are in CSS pixels relative to the element
+        vpt[4] += evt.movementX;
+        vpt[5] += evt.movementY;
+        canvas.setViewportTransform(vpt);
+        canvas.requestRenderAll();
+        return;
+      }
       const active = drawingState.current.activeObject;
       const origin = drawingState.current.origin;
       if (!active || !origin) return;
@@ -157,6 +238,12 @@ const GameScenePage: React.FC = () => {
     };
 
     const onMouseUp = () => {
+      if (tool === "hand") {
+        isPanningRef.current = false;
+        canvas.setCursor("grab");
+        canvas.requestRenderAll();
+        return;
+      }
       const active = drawingState.current.activeObject;
       if (active) {
         active.set({ selectable: true, objectCaching: true });
@@ -257,8 +344,29 @@ const GameScenePage: React.FC = () => {
       </div>
 
       {/* Canvas area with left padding to avoid overlap */}
-      <div className="w-full border rounded bg-white overflow-hidden">
+      <div className="w-full border rounded bg-white overflow-hidden relative">
         <canvas ref={canvasElRef} />
+        {/* Zoom controls */}
+        <div className="absolute right-3 top-3 flex flex-col gap-2 z-50">
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            className="w-9 h-9 rounded-md border bg-white/90 hover:bg-white text-gray-800 shadow"
+            aria-label="Zoom in"
+            title="Zoom in"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            className="w-9 h-9 rounded-md border bg-white/90 hover:bg-white text-gray-800 shadow"
+            aria-label="Zoom out"
+            title="Zoom out"
+          >
+            −
+          </button>
+        </div>
       </div>
     </div>
   );

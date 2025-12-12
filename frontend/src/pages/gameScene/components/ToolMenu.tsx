@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import ToolButton from "./ToolButton";
 import { Button } from "primereact/button";
 
-type Tool = "select" | "pen" | "rect" | "circle" | "text";
+type Tool = "select" | "pen" | "rect" | "circle" | "text" | "hand";
 
 type Props = {
   tool: Tool;
@@ -50,6 +50,15 @@ const ToolMenu: React.FC<Props> = ({
           icon={CursorIcon}
           className={(tool == "select" ? "tooltip-button-selected" : "") + " tooltip-button"}
           onClick={() => setTool("select")}
+        />
+        <Button
+          aria-label="Hand Tool"
+          text
+          raised
+          icon="pi pi-hand"
+          className={(tool == "hand" ? "tooltip-button-selected" : "") + " tooltip-button"}
+          onClick={() => setTool("hand")}
+          tooltip="Hand (pan)"
         />
         <Button
           aria-label="Select Tool"
