@@ -3,7 +3,14 @@ import * as fabric from "fabric";
 import ToolMenu from "./components/ToolMenu";
 import "./style.css";
 
-type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand";
+type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
+
+type Layer = {
+  id: string;
+  name: string;
+  visible: boolean;
+  locked: boolean;
+};
 
 const GameScenePage: React.FC = () => {
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
@@ -28,11 +35,21 @@ const GameScenePage: React.FC = () => {
   const [fillColor, setFillColor] = useState<string>("rgba(0,0,0,0)");
   const [strokeWidth, setStrokeWidth] = useState<number>(3);
 
+  // Layers state
+  const [layers, setLayers] = useState<Layer[]>([{ id: "layer-1", name: "Layer 1", visible: true, locked: false }]);
+  const [activeLayerId, setActiveLayerId] = useState<string>("layer-1");
+
   // Temp drawing state
   const drawingState = useRef<{
     origin?: fabric.Point;
     activeObject?: fabric.Object | null;
   }>({});
+
+  // Move-layer drag state
+  const layerMoveRef = useRef<{
+    lastX: number;
+    lastY: number;
+  } | null>(null);
 
   // Initialize fabric canvas
   useEffect(() => {
@@ -69,6 +86,42 @@ const GameScenePage: React.FC = () => {
       fabricRef.current = null;
     };
   }, []);
+
+  // Helpers for layer application
+  const getLayerById = (id: string | undefined | null): Layer | undefined => layers.find((l) => l.id === id);
+
+  const applyLayerPropsToObjects = () => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    canvas.getObjects().forEach((obj) => {
+      const layerId = (obj as any).layerId as string | undefined;
+      const layer = layerId ? getLayerById(layerId) : undefined;
+      if (!layer) return;
+      obj.set({
+        visible: layer.visible,
+        selectable: !layer.locked && tool === "select",
+        evented: !layer.locked,
+      });
+    });
+    canvas.requestRenderAll();
+  };
+
+  const reorderObjectsByLayers = () => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const order = layers.map((l) => l.id);
+    const objs = canvas.getObjects();
+    // stable order: by layer index, then by original index
+    const withIdx = objs.map((o, i) => ({ o, i }));
+    withIdx.sort((a, b) => {
+      const la = order.indexOf(((a.o as any).layerId as string) || "");
+      const lb = order.indexOf(((b.o as any).layerId as string) || "");
+      if (la !== lb) return la - lb;
+      return a.i - b.i;
+    });
+    withIdx.forEach(({ o }, idx) => canvas.moveTo(o, idx));
+    canvas.requestRenderAll();
+  };
 
   // Zoom handlers (mouse wheel and programmatic)
   useEffect(() => {
@@ -127,6 +180,84 @@ const GameScenePage: React.FC = () => {
       canvas.requestRenderAll();
       captureState();
     }
+  };
+
+  // Layer CRUD operations
+  const addLayer = () => {
+    const id = `layer-${Date.now()}`;
+    setLayers((prev) => {
+      const next = [...prev, { id, name: `Layer ${prev.length + 1}`, visible: true, locked: false }];
+      return next;
+    });
+    setActiveLayerId(id);
+    setTimeout(() => {
+      reorderObjectsByLayers();
+      applyLayerPropsToObjects();
+      captureState();
+    }, 0);
+  };
+
+  const renameLayer = (layerId: string, name: string) => {
+    setLayers((prev) => prev.map((l) => (l.id === layerId ? { ...l, name } : l)));
+    setTimeout(() => captureState(), 0);
+  };
+
+  const toggleLayerVisibility = (layerId: string) => {
+    setLayers((prev) => prev.map((l) => (l.id === layerId ? { ...l, visible: !l.visible } : l)));
+    setTimeout(() => {
+      applyLayerPropsToObjects();
+      captureState();
+    }, 0);
+  };
+
+  const toggleLayerLock = (layerId: string) => {
+    setLayers((prev) => prev.map((l) => (l.id === layerId ? { ...l, locked: !l.locked } : l)));
+    setTimeout(() => {
+      applyLayerPropsToObjects();
+      captureState();
+    }, 0);
+  };
+
+  const moveLayerOrder = (layerId: string, direction: "up" | "down") => {
+    setLayers((prev) => {
+      const idx = prev.findIndex((l) => l.id === layerId);
+      if (idx < 0) return prev;
+      const target = direction === "up" ? idx + 1 : idx - 1;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      const [item] = next.splice(idx, 1);
+      next.splice(target, 0, item);
+      return next;
+    });
+    setTimeout(() => {
+      reorderObjectsByLayers();
+      captureState();
+    }, 0);
+  };
+
+  const deleteLayer = (layerId: string) => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    // Move objects of this layer to previous layer if exists, else next, otherwise block deletion
+    setLayers((prev) => {
+      if (prev.length <= 1) return prev; // do not delete last layer
+      const idx = prev.findIndex((l) => l.id === layerId);
+      if (idx === -1) return prev;
+      const fallback = prev[idx === 0 ? 1 : idx - 1].id;
+      // reassign objects
+      canvas.getObjects().forEach((o) => {
+        if ((o as any).layerId === layerId) (o as any).layerId = fallback;
+      });
+      const next = prev.filter((l) => l.id !== layerId);
+      if (activeLayerId === layerId) setActiveLayerId(fallback);
+      setTimeout(() => {
+        applyLayerPropsToObjects();
+        reorderObjectsByLayers();
+        canvas.requestRenderAll();
+        captureState();
+      }, 0);
+      return next;
+    });
   };
 
   // Keyboard: Delete/Backspace to remove selected objects
@@ -294,7 +425,11 @@ const GameScenePage: React.FC = () => {
     canvas.isDrawingMode = false;
     const selectionEnabled = tool === "select";
     canvas.selection = selectionEnabled;
-    canvas.forEachObject((obj) => obj.set({ selectable: selectionEnabled }));
+    canvas.forEachObject((obj) => {
+      const layer = getLayerById(((obj as any).layerId as string) || undefined);
+      const selectable = selectionEnabled && !layer?.locked;
+      obj.set({ selectable });
+    });
 
     // cursors for hand tool
     if (tool === "hand") {
@@ -303,6 +438,9 @@ const GameScenePage: React.FC = () => {
     } else if (tool === "measure" || tool === "arrow") {
       canvas.defaultCursor = "crosshair";
       canvas.hoverCursor = "crosshair";
+    } else if (tool === "moveLayer") {
+      canvas.defaultCursor = "move";
+      canvas.hoverCursor = "move";
     } else {
       canvas.defaultCursor = "default";
       canvas.hoverCursor = "move"; // fabric default-ish for objects
@@ -316,6 +454,7 @@ const GameScenePage: React.FC = () => {
       brush.width = strokeWidth;
     }
 
+    applyLayerPropsToObjects();
     canvas.renderAll();
   }, [tool, strokeColor, strokeWidth]);
 
@@ -331,6 +470,13 @@ const GameScenePage: React.FC = () => {
         isPanningRef.current = true;
         canvas.setCursor("grabbing");
         canvas.requestRenderAll();
+        return;
+      }
+      // MoveLayer tool: start tracking
+      if (tool === "moveLayer") {
+        const evt = opt.e as unknown as MouseEvent;
+        layerMoveRef.current = { lastX: evt.clientX, lastY: evt.clientY };
+        canvas.setCursor("grabbing");
         return;
       }
       // Measure tool: start or finish measuring
@@ -430,6 +576,7 @@ const GameScenePage: React.FC = () => {
           objectCaching: false,
         });
         drawingState.current.activeObject = rect;
+        (rect as any).layerId = activeLayerId;
         canvas.add(rect);
       } else if (tool === "circle") {
         const circle = new fabric.Circle({
@@ -445,6 +592,7 @@ const GameScenePage: React.FC = () => {
           objectCaching: false,
         });
         drawingState.current.activeObject = circle;
+        (circle as any).layerId = activeLayerId;
         canvas.add(circle);
       } else if (tool === "text") {
         const text = new fabric.IText("Text", {
@@ -454,6 +602,7 @@ const GameScenePage: React.FC = () => {
           fontSize: 24,
           editable: true,
         });
+        (text as any).layerId = activeLayerId;
         canvas.add(text);
         canvas.setActiveObject(text);
         // Immediately enter editing mode
@@ -477,6 +626,24 @@ const GameScenePage: React.FC = () => {
         vpt[4] += evt.movementX;
         vpt[5] += evt.movementY;
         canvas.setViewportTransform(vpt);
+        canvas.requestRenderAll();
+        return;
+      }
+      // MoveLayer live behavior
+      if (tool === "moveLayer" && layerMoveRef.current) {
+        const evt = opt.e as unknown as MouseEvent;
+        const zoom = canvas.getZoom() || 1;
+        const dx = (evt.clientX - layerMoveRef.current.lastX) / zoom;
+        const dy = (evt.clientY - layerMoveRef.current.lastY) / zoom;
+        layerMoveRef.current.lastX = evt.clientX;
+        layerMoveRef.current.lastY = evt.clientY;
+        // move all objects of active layer
+        canvas.getObjects().forEach((o) => {
+          if ((o as any).layerId === activeLayerId) {
+            o.set({ left: (o.left || 0) + dx, top: (o.top || 0) + dy });
+            o.setCoords();
+          }
+        });
         canvas.requestRenderAll();
         return;
       }
@@ -546,6 +713,12 @@ const GameScenePage: React.FC = () => {
         captureState();
         return;
       }
+      if (tool === "moveLayer") {
+        layerMoveRef.current = null;
+        canvas.setCursor("move");
+        captureState();
+        return;
+      }
       if (tool === "measure") {
         // nothing on mouse up; finishing is on second click in onMouseDown
         return;
@@ -594,6 +767,7 @@ const GameScenePage: React.FC = () => {
             selectable: true,
             objectCaching: true,
           });
+          (group as any).layerId = activeLayerId;
           canvas.add(group);
           canvas.setActiveObject(group);
           canvas.requestRenderAll();
@@ -678,6 +852,25 @@ const GameScenePage: React.FC = () => {
     };
   }, []);
 
+  // Ensure newly created paths (free drawing) get active layerId
+  useEffect(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const handler = (e: any) => {
+      const path = e.path as fabric.Path;
+      if (path) {
+        (path as any).layerId = activeLayerId;
+        applyLayerPropsToObjects();
+        reorderObjectsByLayers();
+        captureState();
+      }
+    };
+    canvas.on("path:created", handler as any);
+    return () => {
+      canvas.off("path:created", handler as any);
+    };
+  }, [activeLayerId]);
+
   const handleAddImage = (file: File) => {
     const canvas = fabricRef.current;
     if (!canvas) return;
@@ -704,6 +897,7 @@ const GameScenePage: React.FC = () => {
           }
 
           img.set({ selectable: true, objectCaching: true });
+          (img as any).layerId = activeLayerId;
           canvas.add(img);
           canvas.centerObject(img);
           canvas.setActiveObject(img);
@@ -743,6 +937,16 @@ const GameScenePage: React.FC = () => {
             canvas.setBackgroundColor("#f8fafc", () => canvas.requestRenderAll());
             captureState();
           }}
+          // Layers UI props
+          layers={layers}
+          activeLayerId={activeLayerId}
+          onSetActiveLayer={setActiveLayerId}
+          onAddLayer={addLayer}
+          onRenameLayer={renameLayer}
+          onToggleLayerVisibility={toggleLayerVisibility}
+          onToggleLayerLock={toggleLayerLock}
+          onMoveLayerOrder={moveLayerOrder}
+          onDeleteLayer={deleteLayer}
         />
       </div>
 

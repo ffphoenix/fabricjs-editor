@@ -1,7 +1,14 @@
 import React, { useRef } from "react";
 import { Button } from "primereact/button";
 
-type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand";
+type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
+
+type Layer = {
+  id: string;
+  name: string;
+  visible: boolean;
+  locked: boolean;
+};
 
 type Props = {
   tool: Tool;
@@ -16,6 +23,16 @@ type Props = {
   onDeleteSelected: () => void;
   onClear: () => void;
   onAddImage: (file: File) => void;
+  // Layers
+  layers: Layer[];
+  activeLayerId: string;
+  onSetActiveLayer: (id: string) => void;
+  onAddLayer: () => void;
+  onRenameLayer: (id: string, name: string) => void;
+  onToggleLayerVisibility: (id: string) => void;
+  onToggleLayerLock: (id: string) => void;
+  onMoveLayerOrder: (id: string, dir: "up" | "down") => void;
+  onDeleteLayer: (id: string) => void;
 };
 
 const ToolMenu: React.FC<Props> = ({
@@ -31,6 +48,15 @@ const ToolMenu: React.FC<Props> = ({
   onDeleteSelected,
   onClear,
   onAddImage,
+  layers,
+  activeLayerId,
+  onSetActiveLayer,
+  onAddLayer,
+  onRenameLayer,
+  onToggleLayerVisibility,
+  onToggleLayerLock,
+  onMoveLayerOrder,
+  onDeleteLayer,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -206,9 +232,152 @@ const ToolMenu: React.FC<Props> = ({
       <path d="M8 6l-5 5 5 5h6a4 4 0 0 0 4-4v-2" />
     </svg>
   );
+  const LayersIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polygon points="12 2 2 7 12 12 22 7 12 2" />
+      <polyline points="2 17 12 22 22 17" />
+      <polyline points="2 12 12 17 22 12" />
+    </svg>
+  );
+  const EyeIcon = ({ off = false }: { off?: boolean }) =>
+    off ? (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20C7 20 2.73 16.11 1 12c.46-1.06 1.13-2.05 1.96-2.94M4.22 4.22A10.94 10.94 0 0 1 12 4c5 0 9.27 3.89 11 8- .3.69-.68 1.33-1.13 1.93M1 1l22 22" />
+      </svg>
+    ) : (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    );
+  const LockIcon = ({ locked = false }: { locked?: boolean }) =>
+    locked ? (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+    ) : (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+      </svg>
+    );
+  const ChevronUp = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="18 15 12 9 6 15" />
+    </svg>
+  );
+  const ChevronDown = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+  const PlusIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+  const XIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
 
   return (
     <div className="flex h-full w-full flex-col gap-3 pb-70">
+      {/* Tools */}
       <div className="flex flex-col gap-2">
         <Button
           aria-label="Select Tool"
@@ -226,6 +395,15 @@ const ToolMenu: React.FC<Props> = ({
           className={(tool == "hand" ? "tooltip-button-selected" : "") + " tooltip-button"}
           onClick={() => setTool("hand")}
           tooltip="Hand (pan)"
+        />
+        <Button
+          aria-label="Move Layer"
+          text
+          raised
+          icon={LayersIcon}
+          className={(tool == "moveLayer" ? "tooltip-button-selected" : "") + " tooltip-button"}
+          onClick={() => setTool("moveLayer")}
+          tooltip="Move active layer"
         />
         <Button
           aria-label="Pen Tool"
@@ -301,6 +479,102 @@ const ToolMenu: React.FC<Props> = ({
               fileInputRef.current?.click();
             }}
           />
+        </div>
+      </div>
+
+      <div className="h-px w-full bg-gray-200" />
+
+      {/* Layers */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-gray-700">Layers</span>
+          <button
+            type="button"
+            className="p-1 border rounded hover:bg-gray-50"
+            onClick={() => onAddLayer()}
+            title="Add layer"
+          >
+            <PlusIcon />
+          </button>
+        </div>
+        <div className="flex flex-col gap-1 max-h-72 overflow-auto">
+          {layers.map((layer) => {
+            const isActive = layer.id === activeLayerId;
+            return (
+              <div
+                key={layer.id}
+                className={`flex items-center gap-1 rounded border px-2 py-1 ${isActive ? "bg-blue-50 border-blue-300" : "bg-white"}`}
+                onClick={() => onSetActiveLayer(layer.id)}
+              >
+                <button
+                  type="button"
+                  className="p-1 rounded hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleLayerVisibility(layer.id);
+                  }}
+                  title={layer.visible ? "Hide layer" : "Show layer"}
+                >
+                  <EyeIcon off={!layer.visible} />
+                </button>
+                <button
+                  type="button"
+                  className="p-1 rounded hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleLayerLock(layer.id);
+                  }}
+                  title={layer.locked ? "Unlock layer" : "Lock layer"}
+                >
+                  <LockIcon locked={layer.locked} />
+                </button>
+                <div
+                  className="flex-1 truncate cursor-text"
+                  title="Rename layer"
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    const name = prompt("Rename layer", layer.name);
+                    if (name && name.trim()) onRenameLayer(layer.id, name.trim());
+                  }}
+                >
+                  {layer.name}
+                </div>
+                <button
+                  type="button"
+                  className="p-1 rounded hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMoveLayerOrder(layer.id, "up");
+                  }}
+                  title="Move up"
+                >
+                  <ChevronUp />
+                </button>
+                <button
+                  type="button"
+                  className="p-1 rounded hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMoveLayerOrder(layer.id, "down");
+                  }}
+                  title="Move down"
+                >
+                  <ChevronDown />
+                </button>
+                <button
+                  type="button"
+                  className="p-1 rounded hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteLayer(layer.id);
+                  }}
+                  title="Delete layer"
+                >
+                  <XIcon />
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
