@@ -1,5 +1,4 @@
 import React, { useRef } from "react";
-import ToolButton from "./ToolButton";
 import { Button } from "primereact/button";
 
 type Tool = "select" | "pen" | "rect" | "circle" | "text" | "hand";
@@ -40,6 +39,139 @@ const ToolMenu: React.FC<Props> = ({
       <polygon points="7.79,6.86 14.24,26.95 17.01,17.33 25.47,13.62" fill="black" />
     </svg>
   );
+  const HandIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M8 13V5a2 2 0 0 1 4 0v6" />
+      <path d="M12 11V3a2 2 0 0 1 4 0v8" />
+      <path d="M16 10.5V6a2 2 0 0 1 4 0v7.5c0 3.59-2.91 6.5-6.5 6.5H12a6 6 0 0 1-6-6v-2a2 2 0 0 1 4 0" />
+    </svg>
+  );
+  const PencilIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+    </svg>
+  );
+  const SquareIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="4" y="4" width="16" height="16" rx="1" ry="1" />
+    </svg>
+  );
+  const CircleIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="8" />
+    </svg>
+  );
+  const TextIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 7V5h16v2" />
+      <path d="M10 19h4" />
+      <path d="M12 5v14" />
+    </svg>
+  );
+  const ImageIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="M21 15l-5-5L5 21" />
+    </svg>
+  );
+  const TrashIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+  const ClearIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 3l18 18" />
+      <path d="M19 5l-6 6" />
+      <path d="M8 6l-5 5 5 5h6a4 4 0 0 0 4-4v-2" />
+    </svg>
+  );
   return (
     <div className="flex h-full w-full flex-col gap-3 pb-70">
       <div className="flex flex-col gap-2">
@@ -55,29 +187,43 @@ const ToolMenu: React.FC<Props> = ({
           aria-label="Hand Tool"
           text
           raised
-          icon="pi pi-hand"
+          icon={HandIcon}
           className={(tool == "hand" ? "tooltip-button-selected" : "") + " tooltip-button"}
           onClick={() => setTool("hand")}
           tooltip="Hand (pan)"
         />
         <Button
-          aria-label="Select Tool"
+          aria-label="Pen Tool"
           text
           raised
-          icon="pi pi-pencil"
+          icon={PencilIcon}
           className={(tool == "pen" ? "tooltip-button-selected" : "") + " tooltip-button"}
           onClick={() => setTool("pen")}
         />
         <Button
-          aria-label="Select Tool"
+          aria-label="Rectangle Tool"
           text
           raised
-          icon="pi pi-stop"
+          icon={SquareIcon}
           className={(tool == "rect" ? "tooltip-button-selected" : "") + " tooltip-button"}
           onClick={() => setTool("rect")}
         />
-        <ToolButton label="Circle" active={tool === "circle"} onClick={() => setTool("circle")} />
-        <ToolButton label="Text" active={tool === "text"} onClick={() => setTool("text")} />
+        <Button
+          aria-label="Circle Tool"
+          text
+          raised
+          icon={CircleIcon}
+          className={(tool == "circle" ? "tooltip-button-selected" : "") + " tooltip-button"}
+          onClick={() => setTool("circle")}
+        />
+        <Button
+          aria-label="Text Tool"
+          text
+          raised
+          icon={TextIcon}
+          className={(tool == "text" ? "tooltip-button-selected" : "") + " tooltip-button"}
+          onClick={() => setTool("text")}
+        />
         <div>
           <input
             ref={fileInputRef}
@@ -93,8 +239,12 @@ const ToolMenu: React.FC<Props> = ({
               }
             }}
           />
-          <ToolButton
-            label="Image"
+          <Button
+            aria-label="Add Image"
+            text
+            raised
+            icon={ImageIcon}
+            className={"tooltip-button"}
             onClick={() => {
               fileInputRef.current?.click();
             }}
@@ -137,12 +287,15 @@ const ToolMenu: React.FC<Props> = ({
       </div>
 
       <div className="mt-auto flex flex-col gap-2">
-        <button type="button" className="px-2 py-1 text-sm border rounded" onClick={onDeleteSelected}>
-          Delete Selected
-        </button>
-        <button type="button" className="px-2 py-1 text-sm border rounded" onClick={onClear}>
-          Clear
-        </button>
+        <Button
+          aria-label="Delete Selected"
+          text
+          raised
+          icon={TrashIcon}
+          className="tooltip-button"
+          onClick={onDeleteSelected}
+        />
+        <Button aria-label="Clear Canvas" text raised icon={ClearIcon} className="tooltip-button" onClick={onClear} />
       </div>
     </div>
   );

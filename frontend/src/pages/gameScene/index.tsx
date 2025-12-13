@@ -114,6 +114,7 @@ const GameScenePage: React.FC = () => {
       active.forEach((o) => canvas.remove(o));
       canvas.discardActiveObject();
       canvas.requestRenderAll();
+      captureState();
     }
   };
 
@@ -135,11 +136,118 @@ const GameScenePage: React.FC = () => {
         handleDeleteSelected();
         // prevent navigating back on Backspace when nothing is focused
         e.preventDefault();
+        return;
+      }
+
+      // Undo / Redo shortcuts
+      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+      if (isCtrlOrMeta && e.key.toLowerCase() === "z") {
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+        e.preventDefault();
+        return;
+      }
+      if (isCtrlOrMeta && e.key.toLowerCase() === "y") {
+        redo();
+        e.preventDefault();
+        return;
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  // ---- Undo/Redo History ----
+  type HistoryEntry = { json: string; panX: number; panY: number };
+  const undoStackRef = useRef<HistoryEntry[]>([]);
+  const redoStackRef = useRef<HistoryEntry[]>([]);
+  const isRestoringRef = useRef<boolean>(false);
+  const MAX_HISTORY = 50;
+
+  const getPan = () => {
+    const canvas = fabricRef.current;
+    if (!canvas) return { panX: 0, panY: 0 };
+    const vpt = canvas.viewportTransform || fabric.iMatrix.concat();
+    return { panX: vpt[4] || 0, panY: vpt[5] || 0 };
+  };
+
+  const setPanKeepingZoom = (panX: number, panY: number) => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const vpt = (canvas.viewportTransform || fabric.iMatrix.concat()).slice() as number[];
+    const zoom = canvas.getZoom();
+    vpt[0] = zoom; // scaleX
+    vpt[3] = zoom; // scaleY
+    vpt[4] = panX; // translateX
+    vpt[5] = panY; // translateY
+    canvas.setViewportTransform(vpt as any);
+  };
+
+  const makeSnapshot = (): HistoryEntry | null => {
+    const canvas = fabricRef.current;
+    if (!canvas) return null;
+    const json = JSON.stringify(canvas.toJSON());
+    const { panX, panY } = getPan();
+    return { json, panX, panY };
+  };
+
+  const captureState = () => {
+    if (isRestoringRef.current) return; // avoid capturing while restoring
+    const snap = makeSnapshot();
+    if (!snap) return;
+    undoStackRef.current.push(snap);
+    if (undoStackRef.current.length > MAX_HISTORY) undoStackRef.current.shift();
+    // new action invalidates redo stack
+    redoStackRef.current = [];
+  };
+
+  const applyState = (entry: HistoryEntry | undefined, onDone?: () => void) => {
+    const canvas = fabricRef.current;
+    if (!canvas || !entry) return;
+    isRestoringRef.current = true;
+    canvas.loadFromJSON(entry.json, () => {
+      // keep current zoom, restore pan
+      setPanKeepingZoom(entry.panX, entry.panY);
+      canvas.renderAll();
+      isRestoringRef.current = false;
+      if (onDone) onDone();
+    });
+  };
+
+  const undo = () => {
+    // Need at least one prior state to go back to
+    if (undoStackRef.current.length < 2) return;
+    const current = undoStackRef.current.pop(); // current state
+    const prev = undoStackRef.current[undoStackRef.current.length - 1]; // previous remains on stack
+    if (!current || !prev) return;
+    // push current to redo
+    redoStackRef.current.push(current);
+    applyState(prev);
+  };
+
+  const redo = () => {
+    const next = redoStackRef.current.pop();
+    if (!next) return;
+    // push current to undo
+    const current = makeSnapshot();
+    if (current) undoStackRef.current.push(current);
+    applyState(next);
+  };
+
+  // Capture initial state once canvas is ready
+  useEffect(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    // small timeout to ensure initial sizing applied
+    setTimeout(() => {
+      undoStackRef.current = [];
+      redoStackRef.current = [];
+      captureState();
+    }, 0);
   }, []);
 
   // Update tool specifics (drawing mode, selection, brush)
@@ -279,6 +387,8 @@ const GameScenePage: React.FC = () => {
         isPanningRef.current = false;
         canvas.setCursor("grab");
         canvas.requestRenderAll();
+        // capture pan change (exclude zoom)
+        captureState();
         return;
       }
       const active = drawingState.current.activeObject;
@@ -290,6 +400,8 @@ const GameScenePage: React.FC = () => {
       // After finishing a shape, switch to select to allow moving it
       if (tool === "rect" || tool === "circle") {
         setTool("select");
+        // capture newly created shape
+        captureState();
       }
     };
 
@@ -304,6 +416,28 @@ const GameScenePage: React.FC = () => {
       canvas.off("mouse:up", onMouseUp);
     };
   }, [tool, strokeColor, strokeWidth, fillColor]);
+
+  // Capture changes for various canvas events
+  useEffect(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+
+    const onObjectModified = () => captureState();
+    const onPathCreated = () => captureState();
+    const onEditingExited = () => captureState();
+
+    canvas.on("object:modified", onObjectModified);
+    // free drawing path created
+    canvas.on("path:created", onPathCreated as any);
+    // text editing finished
+    canvas.on("editing:exited", onEditingExited as any);
+
+    return () => {
+      canvas.off("object:modified", onObjectModified);
+      canvas.off("path:created", onPathCreated as any);
+      canvas.off("editing:exited", onEditingExited as any);
+    };
+  }, []);
 
   const handleAddImage = (file: File) => {
     const canvas = fabricRef.current;
@@ -336,6 +470,7 @@ const GameScenePage: React.FC = () => {
           canvas.setActiveObject(img);
           canvas.requestRenderAll();
           setTool("select");
+          captureState();
         },
         { crossOrigin: "anonymous" },
       );
@@ -367,6 +502,7 @@ const GameScenePage: React.FC = () => {
             if (!canvas) return;
             canvas.clear();
             canvas.setBackgroundColor("#f8fafc", () => canvas.requestRenderAll());
+            captureState();
           }}
         />
       </div>
