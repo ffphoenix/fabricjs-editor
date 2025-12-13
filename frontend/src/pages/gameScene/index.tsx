@@ -3,7 +3,7 @@ import * as fabric from "fabric";
 import ToolMenu from "./components/ToolMenu";
 import "./style.css";
 
-type Tool = "select" | "pen" | "rect" | "circle" | "text" | "hand";
+type Tool = "select" | "pen" | "rect" | "circle" | "text" | "measure" | "hand";
 
 const GameScenePage: React.FC = () => {
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
@@ -11,6 +11,12 @@ const GameScenePage: React.FC = () => {
   const fabricRef = useRef<fabric.Canvas | null>(null);
   const wheelHandlerRef = useRef<((e: fabric.IEvent<WheelEvent>) => void) | null>(null);
   const isPanningRef = useRef<boolean>(false);
+  const measuringRef = useRef<{
+    start: fabric.Point;
+    line: fabric.Line;
+    arrow: fabric.Triangle;
+    label: fabric.Text;
+  } | null>(null);
 
   const [tool, setTool] = useState<Tool>("select");
   const [strokeColor, setStrokeColor] = useState<string>("#222222");
@@ -139,6 +145,21 @@ const GameScenePage: React.FC = () => {
         return;
       }
 
+      // Escape: cancel measuring
+      if (e.key === "Escape") {
+        const canvas = fabricRef.current;
+        if (canvas && measuringRef.current) {
+          const { line, arrow, label } = measuringRef.current;
+          canvas.remove(line);
+          canvas.remove(arrow);
+          canvas.remove(label);
+          measuringRef.current = null;
+          canvas.requestRenderAll();
+          e.preventDefault();
+          return;
+        }
+      }
+
       // Undo / Redo shortcuts
       const isCtrlOrMeta = e.ctrlKey || e.metaKey;
       if (isCtrlOrMeta && e.key.toLowerCase() === "z") {
@@ -265,6 +286,9 @@ const GameScenePage: React.FC = () => {
     if (tool === "hand") {
       canvas.defaultCursor = "grab";
       canvas.hoverCursor = "grab";
+    } else if (tool === "measure") {
+      canvas.defaultCursor = "crosshair";
+      canvas.hoverCursor = "crosshair";
     } else {
       canvas.defaultCursor = "default";
       canvas.hoverCursor = "move"; // fabric default-ish for objects
@@ -293,6 +317,58 @@ const GameScenePage: React.FC = () => {
         isPanningRef.current = true;
         canvas.setCursor("grabbing");
         canvas.requestRenderAll();
+        return;
+      }
+      // Measure tool: start or finish measuring
+      if (tool === "measure") {
+        const pointer = canvas.getPointer(opt.e);
+        if (!measuringRef.current) {
+          // start
+          const startPt = new fabric.Point(pointer.x, pointer.y);
+          const red = "#ef4444"; // tailwind red-500
+          const line = new fabric.Line([startPt.x, startPt.y, startPt.x, startPt.y], {
+            stroke: red,
+            strokeWidth: 2,
+            selectable: false,
+            evented: false,
+            excludeFromExport: true as any,
+          });
+          const arrow = new fabric.Triangle({
+            left: startPt.x,
+            top: startPt.y,
+            width: 10,
+            height: 12,
+            fill: red,
+            originX: "center",
+            originY: "center",
+            selectable: false,
+            evented: false,
+            excludeFromExport: true as any,
+          });
+          const label = new fabric.Text("0 px", {
+            left: startPt.x,
+            top: startPt.y,
+            fontSize: 14,
+            fill: red,
+            backgroundColor: "rgba(255,255,255,0.6)",
+            selectable: false,
+            evented: false,
+            excludeFromExport: true as any,
+          });
+          canvas.add(line);
+          canvas.add(arrow);
+          canvas.add(label);
+          measuringRef.current = { start: startPt, line, arrow, label };
+          canvas.requestRenderAll();
+        } else {
+          // finish and clear temp objects
+          const { line, arrow, label } = measuringRef.current;
+          canvas.remove(line);
+          canvas.remove(arrow);
+          canvas.remove(label);
+          measuringRef.current = null;
+          canvas.requestRenderAll();
+        }
         return;
       }
       const pointer = canvas.getPointer(opt.e);
@@ -361,6 +437,30 @@ const GameScenePage: React.FC = () => {
         canvas.requestRenderAll();
         return;
       }
+      // Measure tool live update
+      if (tool === "measure" && measuringRef.current) {
+        const pointer = canvas.getPointer(opt.e);
+        const { start, line, arrow, label } = measuringRef.current;
+        // update line end
+        line.set({ x2: pointer.x, y2: pointer.y });
+        // compute distance
+        const dx = pointer.x - start.x;
+        const dy = pointer.y - start.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        label.set({ text: `${Math.round(dist)} px` });
+        // position label at midpoint with slight offset perpendicular to line
+        const midX = (start.x + pointer.x) / 2;
+        const midY = (start.y + pointer.y) / 2;
+        const angle = Math.atan2(dy, dx);
+        const offset = 10;
+        const offX = -Math.sin(angle) * offset;
+        const offY = Math.cos(angle) * offset;
+        label.set({ left: midX + offX, top: midY + offY });
+        // position and rotate arrow at end, pointing along the line
+        arrow.set({ left: pointer.x, top: pointer.y, angle: (angle * 180) / Math.PI + 90 });
+        canvas.requestRenderAll();
+        return;
+      }
       const active = drawingState.current.activeObject;
       const origin = drawingState.current.origin;
       if (!active || !origin) return;
@@ -391,6 +491,10 @@ const GameScenePage: React.FC = () => {
         captureState();
         return;
       }
+      if (tool === "measure") {
+        // nothing on mouse up; finishing is on second click in onMouseDown
+        return;
+      }
       const active = drawingState.current.activeObject;
       if (active) {
         active.set({ selectable: true, objectCaching: true });
@@ -416,6 +520,28 @@ const GameScenePage: React.FC = () => {
       canvas.off("mouse:up", onMouseUp);
     };
   }, [tool, strokeColor, strokeWidth, fillColor]);
+
+  // If leaving measure tool while measuring, cancel and clean up
+  useEffect(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    return () => {
+      // noop on unmount handled elsewhere
+    };
+  }, []);
+
+  useEffect(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    if (tool !== "measure" && measuringRef.current) {
+      const { line, arrow, label } = measuringRef.current;
+      canvas.remove(line);
+      canvas.remove(arrow);
+      canvas.remove(label);
+      measuringRef.current = null;
+      canvas.requestRenderAll();
+    }
+  }, [tool]);
 
   // Capture changes for various canvas events
   useEffect(() => {

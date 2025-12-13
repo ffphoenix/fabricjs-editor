@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import { Button } from "primereact/button";
 
-type Tool = "select" | "pen" | "rect" | "circle" | "text" | "hand";
+type Tool = "select" | "pen" | "rect" | "circle" | "text" | "measure" | "hand";
 
 type Props = {
   tool: Tool;
@@ -119,6 +119,24 @@ const ToolMenu: React.FC<Props> = ({
       <path d="M12 5v14" />
     </svg>
   );
+  const MeasureIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 15l6-6 6 6 6-6" />
+      <path d="M9 9V5" />
+      <path d="M15 15v4" />
+      <path d="M12 12v2" />
+    </svg>
+  );
   const ImageIcon = () => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -223,6 +241,15 @@ const ToolMenu: React.FC<Props> = ({
           icon={TextIcon}
           className={(tool == "text" ? "tooltip-button-selected" : "") + " tooltip-button"}
           onClick={() => setTool("text")}
+        />
+        <Button
+          aria-label="Measure Tool"
+          text
+          raised
+          icon={MeasureIcon}
+          className={(tool == "measure" ? "tooltip-button-selected" : "") + " tooltip-button"}
+          onClick={() => setTool("measure")}
+          tooltip="Measure (distance)"
         />
         <div>
           <input
