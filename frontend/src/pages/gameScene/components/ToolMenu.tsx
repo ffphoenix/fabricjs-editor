@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import { Button } from "primereact/button";
 
-type Tool = "select" | "pen" | "rect" | "circle" | "text" | "measure" | "hand";
+type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand";
 
 type Props = {
   tool: Tool;
@@ -102,6 +102,22 @@ const ToolMenu: React.FC<Props> = ({
       <circle cx="12" cy="12" r="8" />
     </svg>
   );
+  const ArrowIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="4" y1="12" x2="18" y2="12" />
+      <polyline points="12 6 18 12 12 18" />
+    </svg>
+  );
   const TextIcon = () => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -190,6 +206,7 @@ const ToolMenu: React.FC<Props> = ({
       <path d="M8 6l-5 5 5 5h6a4 4 0 0 0 4-4v-2" />
     </svg>
   );
+
   return (
     <div className="flex h-full w-full flex-col gap-3 pb-70">
       <div className="flex flex-col gap-2">
@@ -233,6 +250,14 @@ const ToolMenu: React.FC<Props> = ({
           icon={CircleIcon}
           className={(tool == "circle" ? "tooltip-button-selected" : "") + " tooltip-button"}
           onClick={() => setTool("circle")}
+        />
+        <Button
+          aria-label="Arrow Tool"
+          text
+          raised
+          icon={ArrowIcon}
+          className={(tool == "arrow" ? "tooltip-button-selected" : "") + " tooltip-button"}
+          onClick={() => setTool("arrow")}
         />
         <Button
           aria-label="Text Tool"

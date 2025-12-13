@@ -3,7 +3,7 @@ import * as fabric from "fabric";
 import ToolMenu from "./components/ToolMenu";
 import "./style.css";
 
-type Tool = "select" | "pen" | "rect" | "circle" | "text" | "measure" | "hand";
+type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand";
 
 const GameScenePage: React.FC = () => {
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
@@ -16,6 +16,11 @@ const GameScenePage: React.FC = () => {
     line: fabric.Line;
     arrow: fabric.Triangle;
     label: fabric.Text;
+  } | null>(null);
+  const arrowDrawingRef = useRef<{
+    start: fabric.Point;
+    line: fabric.Line;
+    head: fabric.Triangle;
   } | null>(null);
 
   const [tool, setTool] = useState<Tool>("select");
@@ -145,7 +150,7 @@ const GameScenePage: React.FC = () => {
         return;
       }
 
-      // Escape: cancel measuring
+      // Escape: cancel measuring / arrow drawing
       if (e.key === "Escape") {
         const canvas = fabricRef.current;
         if (canvas && measuringRef.current) {
@@ -154,6 +159,15 @@ const GameScenePage: React.FC = () => {
           canvas.remove(arrow);
           canvas.remove(label);
           measuringRef.current = null;
+          canvas.requestRenderAll();
+          e.preventDefault();
+          return;
+        }
+        if (canvas && arrowDrawingRef.current) {
+          const { line, head } = arrowDrawingRef.current;
+          canvas.remove(line);
+          canvas.remove(head);
+          arrowDrawingRef.current = null;
           canvas.requestRenderAll();
           e.preventDefault();
           return;
@@ -286,7 +300,7 @@ const GameScenePage: React.FC = () => {
     if (tool === "hand") {
       canvas.defaultCursor = "grab";
       canvas.hoverCursor = "grab";
-    } else if (tool === "measure") {
+    } else if (tool === "measure" || tool === "arrow") {
       canvas.defaultCursor = "crosshair";
       canvas.hoverCursor = "crosshair";
     } else {
@@ -369,6 +383,35 @@ const GameScenePage: React.FC = () => {
           measuringRef.current = null;
           canvas.requestRenderAll();
         }
+        return;
+      }
+      // Arrow tool: start drawing
+      if (tool === "arrow") {
+        const pointer = canvas.getPointer(opt.e);
+        const startPt = new fabric.Point(pointer.x, pointer.y);
+        const line = new fabric.Line([startPt.x, startPt.y, startPt.x, startPt.y], {
+          stroke: strokeColor,
+          strokeWidth: strokeWidth,
+          selectable: false,
+          evented: false,
+          objectCaching: false,
+        });
+        const headSize = Math.max(8, strokeWidth * 4);
+        const head = new fabric.Triangle({
+          left: startPt.x,
+          top: startPt.y,
+          width: headSize,
+          height: headSize + 2,
+          fill: strokeColor,
+          originX: "center",
+          originY: "center",
+          selectable: false,
+          evented: false,
+        });
+        canvas.add(line);
+        canvas.add(head);
+        arrowDrawingRef.current = { start: startPt, line, head };
+        canvas.requestRenderAll();
         return;
       }
       const pointer = canvas.getPointer(opt.e);
@@ -461,6 +504,18 @@ const GameScenePage: React.FC = () => {
         canvas.requestRenderAll();
         return;
       }
+      // Arrow live update
+      if (tool === "arrow" && arrowDrawingRef.current) {
+        const pointer = canvas.getPointer(opt.e);
+        const { start, line, head } = arrowDrawingRef.current;
+        line.set({ x2: pointer.x, y2: pointer.y });
+        const dx = pointer.x - start.x;
+        const dy = pointer.y - start.y;
+        const angle = Math.atan2(dy, dx);
+        head.set({ left: pointer.x, top: pointer.y, angle: (angle * 180) / Math.PI + 90 });
+        canvas.requestRenderAll();
+        return;
+      }
       const active = drawingState.current.activeObject;
       const origin = drawingState.current.origin;
       if (!active || !origin) return;
@@ -493,6 +548,57 @@ const GameScenePage: React.FC = () => {
       }
       if (tool === "measure") {
         // nothing on mouse up; finishing is on second click in onMouseDown
+        return;
+      }
+      if (tool === "arrow") {
+        // finalize arrow into a grouped selectable object
+        const ad = arrowDrawingRef.current;
+        if (ad) {
+          const { start, line, head } = ad;
+          const x1 = (line as any).x1 as number;
+          const y1 = (line as any).y1 as number;
+          const x2 = (line as any).x2 as number;
+          const y2 = (line as any).y2 as number;
+          const dx = x2 - x1;
+          const dy = y2 - y1;
+          const dist = Math.hypot(dx, dy);
+          // remove temp objects
+          canvas.remove(line);
+          canvas.remove(head);
+          arrowDrawingRef.current = null;
+
+          if (dist < 2) {
+            canvas.requestRenderAll();
+            return; // too small, ignore
+          }
+
+          const lineFinal = new fabric.Line([x1, y1, x2, y2], {
+            stroke: strokeColor,
+            strokeWidth: strokeWidth,
+            selectable: true,
+            objectCaching: true,
+          });
+          const headSize = Math.max(8, strokeWidth * 4);
+          const angle = Math.atan2(dy, dx);
+          const headFinal = new fabric.Triangle({
+            left: x2,
+            top: y2,
+            width: headSize,
+            height: headSize + 2,
+            fill: strokeColor,
+            originX: "center",
+            originY: "center",
+            angle: (angle * 180) / Math.PI + 90,
+          });
+          const group = new fabric.Group([lineFinal, headFinal], {
+            selectable: true,
+            objectCaching: true,
+          });
+          canvas.add(group);
+          canvas.setActiveObject(group);
+          canvas.requestRenderAll();
+          captureState();
+        }
         return;
       }
       const active = drawingState.current.activeObject;
@@ -539,6 +645,13 @@ const GameScenePage: React.FC = () => {
       canvas.remove(arrow);
       canvas.remove(label);
       measuringRef.current = null;
+      canvas.requestRenderAll();
+    }
+    if (tool !== "arrow" && arrowDrawingRef.current) {
+      const { line, head } = arrowDrawingRef.current;
+      canvas.remove(line);
+      canvas.remove(head);
+      arrowDrawingRef.current = null;
       canvas.requestRenderAll();
     }
   }, [tool]);
