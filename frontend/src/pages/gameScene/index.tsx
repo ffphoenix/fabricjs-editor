@@ -105,6 +105,43 @@ const GameScenePage: React.FC = () => {
   const handleZoomIn = () => zoomByFactor(1.2);
   const handleZoomOut = () => zoomByFactor(1 / 1.2);
 
+  // Helper: delete selected objects
+  const handleDeleteSelected = () => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const active = canvas.getActiveObjects();
+    if (active.length) {
+      active.forEach((o) => canvas.remove(o));
+      canvas.discardActiveObject();
+      canvas.requestRenderAll();
+    }
+  };
+
+  // Keyboard: Delete/Backspace to remove selected objects
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      // ignore when typing in inputs/textareas or contenteditable
+      const target = e.target as HTMLElement | null;
+      const tag = (target?.tagName || "").toLowerCase();
+      const isEditable = tag === "input" || tag === "textarea" || (target && (target as HTMLElement).isContentEditable);
+
+      // If an IText is actively editing, do not intercept
+      const activeObj = fabricRef.current?.getActiveObject() as any;
+      const isFabricTextEditing = !!(activeObj && typeof activeObj.isEditing === "boolean" && activeObj.isEditing);
+
+      if (isEditable || isFabricTextEditing) return;
+
+      if (e.key === "Delete" || e.key === "Backspace") {
+        handleDeleteSelected();
+        // prevent navigating back on Backspace when nothing is focused
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   // Update tool specifics (drawing mode, selection, brush)
   useEffect(() => {
     const canvas = fabricRef.current;
@@ -324,16 +361,7 @@ const GameScenePage: React.FC = () => {
           setStrokeWidth={setStrokeWidth}
           onNoFill={() => setFillColor("rgba(0,0,0,0)")}
           onAddImage={handleAddImage}
-          onDeleteSelected={() => {
-            const canvas = fabricRef.current;
-            if (!canvas) return;
-            const active = canvas.getActiveObjects();
-            if (active.length) {
-              active.forEach((o) => canvas.remove(o));
-              canvas.discardActiveObject();
-              canvas.requestRenderAll();
-            }
-          }}
+          onDeleteSelected={handleDeleteSelected}
           onClear={() => {
             const canvas = fabricRef.current;
             if (!canvas) return;
