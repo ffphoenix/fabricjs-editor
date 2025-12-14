@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as fabric from "fabric";
 import ToolMenu from "./components/ToolMenu";
 import "./style.css";
+import useCanvas from "./hooks/useCanvas";
 
 type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
 
@@ -13,8 +14,6 @@ type Layer = {
 };
 
 const GameScenePage: React.FC = () => {
-  const canvasElRef = useRef<HTMLCanvasElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const fabricRef = useRef<fabric.Canvas | null>(null);
   const wheelHandlerRef = useRef<((e: fabric.IEvent<WheelEvent>) => void) | null>(null);
   const isPanningRef = useRef<boolean>(false);
@@ -29,6 +28,13 @@ const GameScenePage: React.FC = () => {
     line: fabric.Line;
     head: fabric.Triangle;
   } | null>(null);
+
+  const { canvas, canvasElRef, containerRef } = useCanvas({
+    backgroundColor: "#f8fafc", // slate-50
+    selection: true,
+    preserveObjectStacking: true,
+  });
+  fabricRef.current = canvas;
 
   console.log("GameScenePage rendered");
 
@@ -53,47 +59,10 @@ const GameScenePage: React.FC = () => {
     lastY: number;
   } | null>(null);
 
-  // Initialize fabric canvas
-  useEffect(() => {
-    if (!canvasElRef.current) return;
-    const canvas = new fabric.Canvas(canvasElRef.current, {
-      backgroundColor: "#f8fafc", // slate-50
-      selection: true,
-      preserveObjectStacking: true,
-    });
-    fabricRef.current = canvas;
-
-    const resize = () => {
-      if (!containerRef.current) return;
-      const { clientWidth, clientHeight } = containerRef.current;
-      // Provide a reasonable min height
-      const height = Math.max(clientHeight || 600, 500);
-      // Account for left menu padding (pl-52 ~ 208px)
-      const effectiveWidth = Math.max(clientWidth || 800, 300);
-      canvas.setWidth(effectiveWidth);
-      canvas.setHeight(height);
-      canvas.renderAll();
-    };
-    resize();
-    window.addEventListener("resize", resize);
-
-    return () => {
-      window.removeEventListener("resize", resize);
-      // detach wheel handler if attached
-      if (wheelHandlerRef.current) {
-        // @ts-expect-error fabric event typing
-        canvas.off("mouse:wheel", wheelHandlerRef.current);
-      }
-      canvas.dispose();
-      fabricRef.current = null;
-    };
-  }, []);
-
   // Helpers for layer application
   const getLayerById = (id: string | undefined | null): Layer | undefined => layers.find((l) => l.id === id);
 
   const applyLayerPropsToObjects = () => {
-    const canvas = fabricRef.current;
     if (!canvas) return;
     canvas.getObjects().forEach((obj) => {
       const layerId = (obj as any).layerId as string | undefined;
@@ -150,7 +119,6 @@ const GameScenePage: React.FC = () => {
 
     return () => {
       if (wheelHandlerRef.current) {
-        // @ts-expect-error fabric event typing
         canvas.off("mouse:wheel", wheelHandlerRef.current);
       }
     };
