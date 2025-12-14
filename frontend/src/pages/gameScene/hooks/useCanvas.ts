@@ -18,6 +18,7 @@ export default (canvasOptions: TCanvasOptions) => {
 
   useEffect(() => {
     if (!canvasElRef.current) return;
+    console.log("init canvas");
     const canvas = new fabric.Canvas(canvasElRef.current, { defaultCanvasOptions, ...canvasOptions });
     canvasRef.current = canvas;
 
@@ -34,6 +35,7 @@ export default (canvasOptions: TCanvasOptions) => {
 
   return {
     containerRef,
+    canvasRef,
     canvas: canvasRef.current,
     canvasElRef,
   };

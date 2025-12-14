@@ -3,6 +3,8 @@ import * as fabric from "fabric";
 import ToolMenu from "./components/ToolMenu";
 import "./style.css";
 import useCanvas from "./hooks/useCanvas";
+import ZoomControls from "./components/ZoomControls";
+import useWheelHandler from "./hooks/useWheelHandler";
 
 type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
 
@@ -15,7 +17,6 @@ type Layer = {
 
 const GameScenePage: React.FC = () => {
   const fabricRef = useRef<fabric.Canvas | null>(null);
-  const wheelHandlerRef = useRef<((e: fabric.IEvent<WheelEvent>) => void) | null>(null);
   const isPanningRef = useRef<boolean>(false);
   const measuringRef = useRef<{
     start: fabric.Point;
@@ -29,13 +30,13 @@ const GameScenePage: React.FC = () => {
     head: fabric.Triangle;
   } | null>(null);
 
-  const { canvas, canvasElRef, containerRef } = useCanvas({
+  const { canvas, canvasRef, canvasElRef, containerRef } = useCanvas({
     backgroundColor: "#f8fafc", // slate-50
     selection: true,
     preserveObjectStacking: true,
   });
   fabricRef.current = canvas;
-
+  useWheelHandler(canvasRef);
   console.log("GameScenePage rendered");
 
   const [tool, setTool] = useState<Tool>("select");
@@ -95,49 +96,6 @@ const GameScenePage: React.FC = () => {
   };
 
   // Zoom handlers (mouse wheel and programmatic)
-  useEffect(() => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-
-    const MIN_ZOOM = 0.2;
-    const MAX_ZOOM = 5;
-
-    const onWheel = (opt: any) => {
-      const evt: WheelEvent = opt.e as WheelEvent;
-      let zoom = canvas.getZoom();
-      const delta = evt.deltaY;
-      const factor = 0.999 ** delta; // smooth zoom
-      zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
-      const point = new fabric.Point(evt.offsetX, evt.offsetY);
-      canvas.zoomToPoint(point, zoom);
-      evt.preventDefault();
-      evt.stopPropagation();
-    };
-
-    wheelHandlerRef.current = onWheel;
-    canvas.on("mouse:wheel", onWheel as unknown as fabric.IEventHandler<WheelEvent>);
-
-    return () => {
-      if (wheelHandlerRef.current) {
-        canvas.off("mouse:wheel", wheelHandlerRef.current);
-      }
-    };
-  }, []);
-
-  const zoomByFactor = (factor: number) => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    const MIN_ZOOM = 0.2;
-    const MAX_ZOOM = 5;
-    const current = canvas.getZoom();
-    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, current * factor));
-    const center = canvas.getCenter();
-    const point = new fabric.Point(center.left, center.top);
-    canvas.zoomToPoint(point, next);
-  };
-
-  const handleZoomIn = () => zoomByFactor(1.2);
-  const handleZoomOut = () => zoomByFactor(1 / 1.2);
 
   // Helper: delete selected objects
   const handleDeleteSelected = () => {
@@ -923,27 +881,7 @@ const GameScenePage: React.FC = () => {
       {/* Canvas area with left padding to avoid overlap */}
       <div className="w-full border rounded bg-white overflow-hidden relative">
         <canvas ref={canvasElRef} />
-        {/* Zoom controls */}
-        <div className="absolute right-3 top-3 flex flex-col gap-2 z-50">
-          <button
-            type="button"
-            onClick={handleZoomIn}
-            className="w-9 h-9 rounded-md border bg-white/90 hover:bg-white text-gray-800 shadow"
-            aria-label="Zoom in"
-            title="Zoom in"
-          >
-            +
-          </button>
-          <button
-            type="button"
-            onClick={handleZoomOut}
-            className="w-9 h-9 rounded-md border bg-white/90 hover:bg-white text-gray-800 shadow"
-            aria-label="Zoom out"
-            title="Zoom out"
-          >
-            −
-          </button>
-        </div>
+        <ZoomControls canvasRef={canvasRef} />
       </div>
     </div>
   );
