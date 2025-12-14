@@ -4,7 +4,7 @@ import ToolMenu from "./components/ToolMenu";
 import "./style.css";
 import useCanvas from "./hooks/useCanvas";
 import ZoomControls from "./components/ZoomControls";
-import useWheelHandler from "./hooks/useWheelHandler";
+import useWheelZoomHandler from "./hooks/useWheelZoomHandler";
 
 type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
 
@@ -36,7 +36,7 @@ const GameScenePage: React.FC = () => {
     preserveObjectStacking: true,
   });
   fabricRef.current = canvas;
-  useWheelHandler(canvasRef);
+  useWheelZoomHandler(canvasRef);
   console.log("GameScenePage rendered");
 
   const [tool, setTool] = useState<Tool>("select");
