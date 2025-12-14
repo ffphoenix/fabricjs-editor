@@ -3,11 +3,7 @@ import { Button } from "primereact/button";
 import {
   ArrowIcon,
   CursorIcon,
-  EyeIcon,
-  EyeOffIcon,
   LayersIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
   ClearIcon,
   ImageIcon,
   HandIcon,
@@ -16,21 +12,10 @@ import {
   CircleIcon,
   TextIcon,
   MeasureIcon,
-  LockUnlockedIcon,
-  LockLockedIcon,
-  PlusIcon,
-  XIcon,
   TrashIcon,
 } from "../icons";
 
 type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
-
-type Layer = {
-  id: string;
-  name: string;
-  visible: boolean;
-  locked: boolean;
-};
 
 type Props = {
   tool: Tool;
@@ -45,16 +30,6 @@ type Props = {
   onDeleteSelected: () => void;
   onClear: () => void;
   onAddImage: (file: File) => void;
-  // Layers
-  layers: Layer[];
-  activeLayerId: string;
-  onSetActiveLayer: (id: string) => void;
-  onAddLayer: () => void;
-  onRenameLayer: (id: string, name: string) => void;
-  onToggleLayerVisibility: (id: string) => void;
-  onToggleLayerLock: (id: string) => void;
-  onMoveLayerOrder: (id: string, dir: "up" | "down") => void;
-  onDeleteLayer: (id: string) => void;
 };
 
 const ToolMenu: React.FC<Props> = ({
@@ -70,21 +45,8 @@ const ToolMenu: React.FC<Props> = ({
   onDeleteSelected,
   onClear,
   onAddImage,
-  layers,
-  activeLayerId,
-  onSetActiveLayer,
-  onAddLayer,
-  onRenameLayer,
-  onToggleLayerVisibility,
-  onToggleLayerLock,
-  onMoveLayerOrder,
-  onDeleteLayer,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const EyeIconContent = ({ off = false }: { off?: boolean }) => (off ? <EyeIcon /> : <EyeOffIcon />);
-  const LockIconContent = ({ locked = false }: { locked?: boolean }) =>
-    locked ? <LockLockedIcon /> : <LockUnlockedIcon />;
 
   return (
     <div className="flex h-full w-full flex-col gap-3 pb-70">
@@ -196,98 +158,6 @@ const ToolMenu: React.FC<Props> = ({
       <div className="h-px w-full bg-gray-200" />
 
       {/* Layers */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-gray-700">Layers</span>
-          <button
-            type="button"
-            className="p-1 border rounded hover:bg-gray-50"
-            onClick={() => onAddLayer()}
-            title="Add layer"
-          >
-            <PlusIcon />
-          </button>
-        </div>
-        <div className="flex flex-col gap-1 max-h-72 overflow-auto">
-          {layers.map((layer) => {
-            const isActive = layer.id === activeLayerId;
-            return (
-              <div
-                key={layer.id}
-                className={`flex items-center gap-1 rounded border px-2 py-1 ${isActive ? "bg-blue-50 border-blue-300" : "bg-white"}`}
-                onClick={() => onSetActiveLayer(layer.id)}
-              >
-                <button
-                  type="button"
-                  className="p-1 rounded hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleLayerVisibility(layer.id);
-                  }}
-                  title={layer.visible ? "Hide layer" : "Show layer"}
-                >
-                  <EyeIconContent off={!layer.visible} />
-                </button>
-                <button
-                  type="button"
-                  className="p-1 rounded hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleLayerLock(layer.id);
-                  }}
-                  title={layer.locked ? "Unlock layer" : "Lock layer"}
-                >
-                  <LockIconContent locked={layer.locked} />
-                </button>
-                <div
-                  className="flex-1 truncate cursor-text"
-                  title="Rename layer"
-                  onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    const name = prompt("Rename layer", layer.name);
-                    if (name && name.trim()) onRenameLayer(layer.id, name.trim());
-                  }}
-                >
-                  {layer.name}
-                </div>
-                <button
-                  type="button"
-                  className="p-1 rounded hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onMoveLayerOrder(layer.id, "up");
-                  }}
-                  title="Move up"
-                >
-                  <ChevronUpIcon />
-                </button>
-                <button
-                  type="button"
-                  className="p-1 rounded hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onMoveLayerOrder(layer.id, "down");
-                  }}
-                  title="Move down"
-                >
-                  <ChevronDownIcon />
-                </button>
-                <button
-                  type="button"
-                  className="p-1 rounded hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteLayer(layer.id);
-                  }}
-                  title="Delete layer"
-                >
-                  <XIcon />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
 
       <div className="h-px w-full bg-gray-200" />
 
