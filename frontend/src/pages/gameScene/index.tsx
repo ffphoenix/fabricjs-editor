@@ -30,6 +30,8 @@ const GameScenePage: React.FC = () => {
     head: fabric.Triangle;
   } | null>(null);
 
+  console.log("GameScenePage rendered");
+
   const [tool, setTool] = useState<Tool>("select");
   const [strokeColor, setStrokeColor] = useState<string>("#222222");
   const [fillColor, setFillColor] = useState<string>("rgba(0,0,0,0)");
