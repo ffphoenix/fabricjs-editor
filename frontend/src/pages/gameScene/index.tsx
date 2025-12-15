@@ -10,13 +10,6 @@ import applyLayerPropsToObjects from "./core/applyLayerPropsToObjects";
 
 export type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
 
-type Layer = {
-  id: string;
-  name: string;
-  visible: boolean;
-  locked: boolean;
-};
-
 const GameScenePage: React.FC = () => {
   const fabricRef = useRef<fabric.Canvas | null>(null);
   const isPanningRef = useRef<boolean>(false);
