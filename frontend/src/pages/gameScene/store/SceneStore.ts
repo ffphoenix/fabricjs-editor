@@ -7,10 +7,34 @@ export type SceneLayer = {
   locked: boolean;
 };
 
+type Tool = "select" | "pencil" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
+
 type SceneStore = {
   layers: {
     activeLayerId: string;
     list: SceneLayer[];
+  };
+  tools: {
+    active: Tool;
+    drawTools: {
+      active: Tool;
+      strokeColor: string;
+      fillColor: string;
+      strokeWidth: number;
+      strokeStyle: "solid" | "dashed" | "dotted";
+    };
+    textTool: {
+      colors: string;
+      fillColor: string;
+      fontSize: number;
+      fontFamily: string;
+      fontWeight: "normal" | "bold";
+      fontStyle: "normal" | "italic";
+    };
+    measurementTool: {
+      shape: "line" | "circle";
+      delay: number;
+    };
   };
   UI: {
     currentZoom: number;
@@ -18,11 +42,35 @@ type SceneStore = {
   setCurrentZoom: (zoom: number) => void;
   getLayerById: (layerId: string) => SceneLayer | undefined;
   activeLayerId: string;
+  currentZoom: number;
+  setActiveTool: (tool: Tool) => void;
 };
 
-const sceneStore = makeAutoObservable({
+const sceneStore: SceneStore = makeAutoObservable<SceneStore>({
   UI: {
     currentZoom: 100,
+  },
+  tools: {
+    active: "select",
+    drawTools: {
+      active: "pencil",
+      strokeColor: "#000000",
+      fillColor: "#ffffff",
+      strokeWidth: 3,
+      strokeStyle: "solid",
+    },
+    textTool: {
+      colors: "#000000",
+      fillColor: "#ffffff",
+      fontSize: 16,
+      fontFamily: "Arial",
+      fontWeight: "normal",
+      fontStyle: "normal",
+    },
+    measurementTool: {
+      shape: "line",
+      delay: 0,
+    },
   },
   layers: {
     activeLayerId: "background",
@@ -38,6 +86,7 @@ const sceneStore = makeAutoObservable({
   getLayerById: (layerId: string) => {
     return sceneStore.layers.list.find((layer) => layer.id === layerId);
   },
-} as SceneStore);
+  setActiveTool: (tool: Tool) => (sceneStore.tools.active = tool),
+});
 
 export default sceneStore;
