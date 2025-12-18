@@ -7,7 +7,7 @@ export type SceneLayer = {
   locked: boolean;
 };
 
-type Tool = "select" | "pencil" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
+export type Tool = "select" | "pencil" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
 
 type SceneStore = {
   layers: {
@@ -44,6 +44,11 @@ type SceneStore = {
   activeLayerId: string;
   currentZoom: number;
   setActiveTool: (tool: Tool) => void;
+  activeTool: Tool;
+  activeDrawTool: Tool;
+  setDrawToolStrokeColor: (color: string) => void;
+  setDrawToolFillColor: (color: string) => void;
+  setDrawToolStrokeWidth: (width: number) => void;
 };
 
 const sceneStore: SceneStore = makeAutoObservable<SceneStore>({
@@ -87,6 +92,15 @@ const sceneStore: SceneStore = makeAutoObservable<SceneStore>({
     return sceneStore.layers.list.find((layer) => layer.id === layerId);
   },
   setActiveTool: (tool: Tool) => (sceneStore.tools.active = tool),
+  get activeTool(): Tool {
+    return sceneStore.tools.active;
+  },
+  get activeDrawTool(): Tool {
+    return sceneStore.tools.drawTools.active;
+  },
+  setDrawToolStrokeColor: (color: string) => (sceneStore.tools.drawTools.strokeColor = color),
+  setDrawToolFillColor: (color: string) => (sceneStore.tools.drawTools.fillColor = color),
+  setDrawToolStrokeWidth: (width: number) => (sceneStore.tools.drawTools.strokeWidth = width),
 });
 
 export default sceneStore;

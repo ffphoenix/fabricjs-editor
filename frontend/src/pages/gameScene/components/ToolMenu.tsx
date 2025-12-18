@@ -14,6 +14,7 @@ import {
   MeasureIcon,
   TrashIcon,
 } from "../icons";
+import DrawMenu from "./DrawMenu";
 
 type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
 
@@ -78,6 +79,7 @@ const ToolMenu: React.FC<Props> = ({
           onClick={() => setTool("moveLayer")}
           tooltip="Move active layer"
         />
+        <DrawMenu />
         <Button
           aria-label="Pen Tool"
           text
