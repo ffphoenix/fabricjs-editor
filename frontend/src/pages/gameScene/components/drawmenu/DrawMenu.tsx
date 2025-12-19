@@ -28,7 +28,9 @@ export default observer(() => {
         text
         raised
         icon={toolsIcons[SceneStore.activeDrawTool]}
-        className={(SceneStore.activeTool == "pencil" ? "tooltip-button-selected" : "") + " tooltip-button"}
+        className={
+          (SceneStore.activeTool == SceneStore.activeDrawTool ? "tooltip-button-selected" : "") + " tooltip-button"
+        }
         onClick={(e) => {
           if (overlayPanelRef.current) overlayPanelRef.current.toggle(e);
         }}
