@@ -46,6 +46,7 @@ type SceneStore = {
   setActiveTool: (tool: Tool) => void;
   activeTool: Tool;
   activeDrawTool: Tool;
+  setActiveDrawTool: (tool: Tool) => void;
   setDrawToolStrokeColor: (color: string) => void;
   setDrawToolFillColor: (color: string) => void;
   setDrawToolStrokeWidth: (width: number) => void;
@@ -97,6 +98,10 @@ const sceneStore: SceneStore = makeAutoObservable<SceneStore>({
   },
   get activeDrawTool(): Tool {
     return sceneStore.tools.drawTools.active;
+  },
+  setActiveDrawTool: (tool: Tool) => {
+    sceneStore.tools.drawTools.active = tool;
+    sceneStore.tools.active = tool;
   },
   setDrawToolStrokeColor: (color: string) => (sceneStore.tools.drawTools.strokeColor = color),
   setDrawToolFillColor: (color: string) => (sceneStore.tools.drawTools.fillColor = color),

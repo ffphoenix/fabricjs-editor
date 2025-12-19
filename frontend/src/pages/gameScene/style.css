@@ -6,32 +6,3 @@
 .tooltip-button-selected {
     box-shadow: inset 0px 0px 5px 2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
-
-.draw-tool-overlay
-{
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 200px;
-    top: 0 !important;
-    left: 40px !important;
-    right: auto !important;
-    &:before {
-
-        border: none !important;
-    }
-    &:after {
-        border: none !important;
-    }
-    .p-overlaypanel-content {
-        padding: 0 !important;
-    }
-}
-
-#overlay-anchor {
-    max-height: 0;
-    width: 32px;
-    position: relative;
-    display: inline-block;
-    padding: 0;
-    margin: 0;
-}

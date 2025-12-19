@@ -14,7 +14,7 @@ import {
   MeasureIcon,
   TrashIcon,
 } from "../icons";
-import DrawMenu from "./DrawMenu";
+import DrawMenu from "./drawmenu/DrawMenu";
 
 type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
 
