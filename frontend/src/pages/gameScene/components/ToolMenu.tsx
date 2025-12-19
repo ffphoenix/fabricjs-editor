@@ -14,7 +14,9 @@ import {
   MeasureIcon,
   TrashIcon,
 } from "../icons";
-import DrawMenu from "./drawmenu/DrawMenu";
+import DrawToolsMenu from "./drawToolsMenu/DrawToolsMenu";
+import TextToolMenu from "./textToolMenu/TextToolMenu";
+import "./ToolMenu.css";
 
 type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
 
@@ -79,7 +81,10 @@ const ToolMenu: React.FC<Props> = ({
           onClick={() => setTool("moveLayer")}
           tooltip="Move active layer"
         />
-        <DrawMenu />
+        <div className="h-px w-full bg-gray-200" />
+        <DrawToolsMenu />
+        <TextToolMenu />
+
         <Button
           aria-label="Pen Tool"
           text
@@ -158,42 +163,6 @@ const ToolMenu: React.FC<Props> = ({
       </div>
 
       <div className="h-px w-full bg-gray-200" />
-
-      {/* Layers */}
-
-      <div className="h-px w-full bg-gray-200" />
-
-      <div className="flex flex-col gap-2">
-        <label className="text-xs text-gray-600">Stroke</label>
-        <input
-          type="color"
-          value={strokeColor}
-          onChange={(e) => setStrokeColor(e.target.value)}
-          className="h-8 w-full cursor-pointer rounded border"
-          title="Stroke color"
-        />
-
-        <label className="text-xs text-gray-600">Fill</label>
-        <input
-          type="color"
-          value={fillColor.startsWith("rgba") ? "#000000" : fillColor}
-          onChange={(e) => setFillColor(e.target.value)}
-          className="h-8 w-full cursor-pointer rounded border"
-          title="Fill color"
-        />
-        <button type="button" className="px-2 py-1 text-xs border rounded" onClick={onNoFill} title="No fill">
-          No Fill
-        </button>
-
-        <label className="text-xs text-gray-600">Width: {strokeWidth}px</label>
-        <input
-          type="range"
-          min={1}
-          max={20}
-          value={strokeWidth}
-          onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
-        />
-      </div>
 
       <div className="mt-auto flex flex-col gap-2">
         <Button

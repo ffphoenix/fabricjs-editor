@@ -4,7 +4,6 @@ import { observer } from "mobx-react-lite";
 import { Button } from "primereact/button";
 import { PencilIcon, SquareIcon, CircleIcon, ArrowIcon } from "../../icons";
 import { OverlayPanel } from "primereact/overlaypanel";
-import "./style.css";
 
 type ToolsIcons = {
   [k: string]: React.ReactNode;
@@ -21,7 +20,7 @@ export default observer(() => {
   const [overlayPanelVisible, setOverlayPanelVisibility] = useState(false);
   return (
     <>
-      <div id="overlay-anchor"></div>
+      <span id="draw-tools-overlay-anchor" className="tools-menu-overlay-anchor" />
       <Button
         aria-label="Drawing Tool"
         tooltip={overlayPanelVisible ? undefined : "Drawing Tools"}
@@ -32,15 +31,18 @@ export default observer(() => {
           (SceneStore.activeTool == SceneStore.activeDrawTool ? "tooltip-button-selected" : "") + " tooltip-button"
         }
         onClick={(e) => {
-          if (overlayPanelRef.current) overlayPanelRef.current.toggle(e);
+          if (overlayPanelRef.current) {
+            overlayPanelRef.current.toggle(e);
+            SceneStore.setActiveTool(SceneStore.activeDrawTool);
+          }
         }}
       />
       <OverlayPanel
         ref={overlayPanelRef}
-        className="draw-tool-overlay"
+        className="tools-menu-overlay"
         onHide={() => setOverlayPanelVisibility(false)}
         onShow={() => setOverlayPanelVisibility(true)}
-        appendTo={document.getElementById("overlay-anchor")}
+        appendTo={document.getElementById("draw-tools-overlay-anchor")}
       >
         <div className="flex gap-2 items-center p-2">
           <Button

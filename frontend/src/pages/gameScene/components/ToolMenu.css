@@ -1,4 +1,4 @@
-.draw-tool-overlay
+.tools-menu-overlay
 {
     padding: 0 !important;
     margin: 0 !important;
@@ -18,7 +18,7 @@
     }
 }
 
-#overlay-anchor {
+.tools-menu-overlay-anchor {
     max-height: 0;
     width: 32px;
     position: relative;

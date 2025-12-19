@@ -698,7 +698,7 @@ const GameScenePage: React.FC = () => {
   return (
     <div className="relative w-full h-full min-h-screen" ref={containerRef}>
       {/* Absolute vertical menu on the left */}
-      <div className="absolute left-0 top-0 h-full w-48 p-3 border-r bg-white/90 backdrop-blur-sm z-1000">
+      <div className="absolute left-0 top-0 h-full p-3 border-r bg-white/90 backdrop-blur-sm z-1000">
         <ToolMenu
           tool={tool}
           setTool={setTool}
