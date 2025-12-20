@@ -7,12 +7,12 @@ import ZoomControls from "./components/ZoomControls";
 import useWheelZoomHandler from "./hooks/useWheelZoomHandler";
 import SceneStore from "./store/SceneStore";
 import applyLayerPropsToObjects from "./core/applyLayerPropsToObjects";
+import useCanvasMouseEvents from "./hooks/useCanvasMouseEvents";
 
 export type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
 
 const GameScenePage: React.FC = () => {
   const fabricRef = useRef<fabric.Canvas | null>(null);
-  const isPanningRef = useRef<boolean>(false);
   const measuringRef = useRef<{
     start: fabric.Point;
     line: fabric.Line;
@@ -32,20 +32,13 @@ const GameScenePage: React.FC = () => {
   });
   fabricRef.current = canvas;
   useWheelZoomHandler(canvasRef);
+  useCanvasMouseEvents(canvasRef);
   console.log("GameScenePage rendered");
 
   const [tool, setTool] = useState<Tool>("select");
   const [strokeColor, setStrokeColor] = useState<string>("#222222");
   const [fillColor, setFillColor] = useState<string>("rgba(0,0,0,0)");
   const [strokeWidth, setStrokeWidth] = useState<number>(3);
-
-  // Zoom handlers (mouse wheel and programmatic)
-
-  // Temp drawing state
-  const drawingState = useRef<{
-    origin?: fabric.Point;
-    activeObject?: fabric.Object | null;
-  }>({});
 
   // Helper: delete selected objects
   const handleDeleteSelected = () => {
@@ -221,39 +214,18 @@ const GameScenePage: React.FC = () => {
     const canvas = fabricRef.current;
     if (!canvas) return;
 
-    // reset modes
-    canvas.isDrawingMode = false;
-    const selectionEnabled = tool === "select";
-    canvas.selection = selectionEnabled;
-    canvas.forEachObject((obj) => {
-      const layer = SceneStore.getLayerById((obj as any).layerId as string);
-      const selectable = selectionEnabled && !layer?.locked;
-      obj.set({ selectable });
-    });
+    // // reset modes !!layers logic
+    // canvas.forEachObject((obj) => {
+    //   const layer = SceneStore.getLayerById((obj as any).layerId as string);
+    //   const selectable = selectionEnabled && !layer?.locked;
+    //   obj.set({ selectable });
+    // });
 
     // cursors for hand tool
-    if (tool === "hand") {
-      canvas.defaultCursor = "grab";
-      canvas.hoverCursor = "grab";
-    } else if (tool === "measure" || tool === "arrow") {
-      canvas.defaultCursor = "crosshair";
-      canvas.hoverCursor = "crosshair";
-    } else if (tool === "moveLayer") {
+    if (tool === "moveLayer") {
       canvas.defaultCursor = "move";
       canvas.hoverCursor = "move";
-    } else {
-      canvas.defaultCursor = "default";
-      canvas.hoverCursor = "move"; // fabric default-ish for objects
     }
-
-    if (tool === "pen") {
-      canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-      canvas.isDrawingMode = true;
-      const brush = canvas.freeDrawingBrush;
-      brush.color = strokeColor;
-      brush.width = strokeWidth;
-    }
-
     applyLayerPropsToObjects(canvas, tool);
     canvas.renderAll();
   }, [tool, strokeColor, strokeWidth]);
@@ -266,12 +238,6 @@ const GameScenePage: React.FC = () => {
     const onMouseDown = (opt: fabric.TPointerEventInfo<MouseEvent>) => {
       if (!canvas) return;
       // Hand tool: start panning
-      if (tool === "hand") {
-        isPanningRef.current = true;
-        canvas.setCursor("grabbing");
-        canvas.requestRenderAll();
-        return;
-      }
       // MoveLayer tool: start tracking
       // if (tool === "moveLayer") {
       //   const evt = opt.e as unknown as MouseEvent;
@@ -280,155 +246,13 @@ const GameScenePage: React.FC = () => {
       //   return;
       // }
       // Measure tool: start or finish measuring
-      if (tool === "measure") {
-        const pointer = canvas.getPointer(opt.e);
-        if (!measuringRef.current) {
-          // start
-          const startPt = new fabric.Point(pointer.x, pointer.y);
-          const red = "#ef4444"; // tailwind red-500
-          const line = new fabric.Line([startPt.x, startPt.y, startPt.x, startPt.y], {
-            stroke: red,
-            strokeWidth: 2,
-            selectable: false,
-            evented: false,
-            excludeFromExport: true as any,
-          });
-          const arrow = new fabric.Triangle({
-            left: startPt.x,
-            top: startPt.y,
-            width: 10,
-            height: 12,
-            fill: red,
-            originX: "center",
-            originY: "center",
-            selectable: false,
-            evented: false,
-            excludeFromExport: true as any,
-          });
-          const label = new fabric.Text("0 px", {
-            left: startPt.x,
-            top: startPt.y,
-            fontSize: 14,
-            fill: red,
-            backgroundColor: "rgba(255,255,255,0.6)",
-            selectable: false,
-            evented: false,
-            excludeFromExport: true as any,
-          });
-          canvas.add(line);
-          canvas.add(arrow);
-          canvas.add(label);
-          measuringRef.current = { start: startPt, line, arrow, label };
-          canvas.requestRenderAll();
-        } else {
-          // finish and clear temp objects
-          const { line, arrow, label } = measuringRef.current;
-          canvas.remove(line);
-          canvas.remove(arrow);
-          canvas.remove(label);
-          measuringRef.current = null;
-          canvas.requestRenderAll();
-        }
-        return;
-      }
       // Arrow tool: start drawing
-      if (tool === "arrow") {
-        const pointer = canvas.getPointer(opt.e);
-        const startPt = new fabric.Point(pointer.x, pointer.y);
-        const line = new fabric.Line([startPt.x, startPt.y, startPt.x, startPt.y], {
-          stroke: strokeColor,
-          strokeWidth: strokeWidth,
-          selectable: false,
-          evented: false,
-          objectCaching: false,
-        });
-        const headSize = Math.max(8, strokeWidth * 4);
-        const head = new fabric.Triangle({
-          left: startPt.x,
-          top: startPt.y,
-          width: headSize,
-          height: headSize + 2,
-          fill: strokeColor,
-          originX: "center",
-          originY: "center",
-          selectable: false,
-          evented: false,
-        });
-        canvas.add(line);
-        canvas.add(head);
-        arrowDrawingRef.current = { start: startPt, line, head };
-        canvas.requestRenderAll();
-        return;
-      }
-      const pointer = canvas.getPointer(opt.e);
-      drawingState.current.origin = new fabric.Point(pointer.x, pointer.y);
-
-      if (tool === "rect") {
-        const rect = new fabric.Rect({
-          left: pointer.x,
-          top: pointer.y,
-          width: 1,
-          height: 1,
-          fill: fillColor,
-          stroke: strokeColor,
-          strokeWidth: strokeWidth,
-          selectable: false,
-          objectCaching: false,
-        });
-        drawingState.current.activeObject = rect;
-        (rect as any).layerId = SceneStore.activeLayerId;
-        canvas.add(rect);
-      } else if (tool === "circle") {
-        const circle = new fabric.Circle({
-          left: pointer.x,
-          top: pointer.y,
-          radius: 1,
-          fill: fillColor,
-          stroke: strokeColor,
-          strokeWidth: strokeWidth,
-          originX: "center",
-          originY: "center",
-          selectable: false,
-          objectCaching: false,
-        });
-        drawingState.current.activeObject = circle;
-        (circle as any).layerId = SceneStore.activeLayerId;
-        canvas.add(circle);
-      } else if (tool === "text") {
-        const text = new fabric.IText("Text", {
-          left: pointer.x,
-          top: pointer.y,
-          fill: strokeColor,
-          fontSize: 24,
-          editable: true,
-        });
-        (text as any).layerId = SceneStore.activeLayerId;
-        canvas.add(text);
-        canvas.setActiveObject(text);
-        // Immediately enter editing mode
-        // @ts-expect-error type guard for IText
-        if (typeof (text as any).enterEditing === "function") {
-          (text as any).enterEditing();
-          (text as any).selectAll();
-        }
-        // switch back to select after placing text
-        setTool("select");
-      }
     };
 
     const onMouseMove = (opt: fabric.TPointerEventInfo<MouseEvent>) => {
       if (!canvas) return;
       // Hand tool panning behavior
-      if (tool === "hand" && isPanningRef.current) {
-        const evt = opt.e as unknown as MouseEvent;
-        const vpt = canvas.viewportTransform || fabric.iMatrix.concat();
-        // movementX/Y are in CSS pixels relative to the element
-        vpt[4] += evt.movementX;
-        vpt[5] += evt.movementY;
-        canvas.setViewportTransform(vpt);
-        canvas.requestRenderAll();
-        return;
-      }
+
       // MoveLayer live behavior
       // if (tool === "moveLayer" && layerMoveRef.current) {
       //   const evt = opt.e as unknown as MouseEvent;
@@ -448,71 +272,12 @@ const GameScenePage: React.FC = () => {
       //   return;
       // }
       // Measure tool live update
-      if (tool === "measure" && measuringRef.current) {
-        const pointer = canvas.getPointer(opt.e);
-        const { start, line, arrow, label } = measuringRef.current;
-        // update line end
-        line.set({ x2: pointer.x, y2: pointer.y });
-        // compute distance
-        const dx = pointer.x - start.x;
-        const dy = pointer.y - start.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        label.set({ text: `${Math.round(dist)} px` });
-        // position label at midpoint with slight offset perpendicular to line
-        const midX = (start.x + pointer.x) / 2;
-        const midY = (start.y + pointer.y) / 2;
-        const angle = Math.atan2(dy, dx);
-        const offset = 10;
-        const offX = -Math.sin(angle) * offset;
-        const offY = Math.cos(angle) * offset;
-        label.set({ left: midX + offX, top: midY + offY });
-        // position and rotate arrow at end, pointing along the line
-        arrow.set({ left: pointer.x, top: pointer.y, angle: (angle * 180) / Math.PI + 90 });
-        canvas.requestRenderAll();
-        return;
-      }
       // Arrow live update
-      if (tool === "arrow" && arrowDrawingRef.current) {
-        const pointer = canvas.getPointer(opt.e);
-        const { start, line, head } = arrowDrawingRef.current;
-        line.set({ x2: pointer.x, y2: pointer.y });
-        const dx = pointer.x - start.x;
-        const dy = pointer.y - start.y;
-        const angle = Math.atan2(dy, dx);
-        head.set({ left: pointer.x, top: pointer.y, angle: (angle * 180) / Math.PI + 90 });
-        canvas.requestRenderAll();
-        return;
-      }
-      const active = drawingState.current.activeObject;
-      const origin = drawingState.current.origin;
-      if (!active || !origin) return;
-      const pointer = canvas.getPointer(opt.e);
-
-      if (active instanceof fabric.Rect) {
-        const left = Math.min(pointer.x, origin.x);
-        const top = Math.min(pointer.y, origin.y);
-        const width = Math.abs(pointer.x - origin.x);
-        const height = Math.abs(pointer.y - origin.y);
-        active.set({ left, top, width, height });
-      } else if (active instanceof fabric.Circle) {
-        const dx = pointer.x - origin.x;
-        const dy = pointer.y - origin.y;
-        const r = Math.sqrt(dx * dx + dy * dy);
-        active.set({ left: origin.x, top: origin.y, radius: r });
-      }
 
       canvas.requestRenderAll();
     };
 
     const onMouseUp = () => {
-      if (tool === "hand") {
-        isPanningRef.current = false;
-        canvas.setCursor("grab");
-        canvas.requestRenderAll();
-        // capture pan change (exclude zoom)
-        captureState();
-        return;
-      }
       // if (tool === "moveLayer") {
       //   layerMoveRef.current = null;
       //   canvas.setCursor("move");
@@ -522,70 +287,6 @@ const GameScenePage: React.FC = () => {
       if (tool === "measure") {
         // nothing on mouse up; finishing is on second click in onMouseDown
         return;
-      }
-      if (tool === "arrow") {
-        // finalize arrow into a grouped selectable object
-        const ad = arrowDrawingRef.current;
-        if (ad) {
-          const { start, line, head } = ad;
-          const x1 = (line as any).x1 as number;
-          const y1 = (line as any).y1 as number;
-          const x2 = (line as any).x2 as number;
-          const y2 = (line as any).y2 as number;
-          const dx = x2 - x1;
-          const dy = y2 - y1;
-          const dist = Math.hypot(dx, dy);
-          // remove temp objects
-          canvas.remove(line);
-          canvas.remove(head);
-          arrowDrawingRef.current = null;
-
-          if (dist < 2) {
-            canvas.requestRenderAll();
-            return; // too small, ignore
-          }
-
-          const lineFinal = new fabric.Line([x1, y1, x2, y2], {
-            stroke: strokeColor,
-            strokeWidth: strokeWidth,
-            selectable: true,
-            objectCaching: true,
-          });
-          const headSize = Math.max(8, strokeWidth * 4);
-          const angle = Math.atan2(dy, dx);
-          const headFinal = new fabric.Triangle({
-            left: x2,
-            top: y2,
-            width: headSize,
-            height: headSize + 2,
-            fill: strokeColor,
-            originX: "center",
-            originY: "center",
-            angle: (angle * 180) / Math.PI + 90,
-          });
-          const group = new fabric.Group([lineFinal, headFinal], {
-            selectable: true,
-            objectCaching: true,
-          });
-          (group as any).layerId = SceneStore.activeLayerId;
-          canvas.add(group);
-          canvas.setActiveObject(group);
-          canvas.requestRenderAll();
-          captureState();
-        }
-        return;
-      }
-      const active = drawingState.current.activeObject;
-      if (active) {
-        active.set({ selectable: true, objectCaching: true });
-      }
-      drawingState.current.activeObject = null;
-      drawingState.current.origin = undefined;
-      // After finishing a shape, switch to select to allow moving it
-      if (tool === "rect" || tool === "circle") {
-        setTool("select");
-        // capture newly created shape
-        captureState();
       }
     };
 
@@ -700,15 +401,6 @@ const GameScenePage: React.FC = () => {
       {/* Absolute vertical menu on the left */}
       <div className="absolute left-0 top-0 h-full p-3 border-r bg-white/90 backdrop-blur-sm z-1000">
         <ToolMenu
-          tool={tool}
-          setTool={setTool}
-          strokeColor={strokeColor}
-          setStrokeColor={setStrokeColor}
-          fillColor={fillColor}
-          setFillColor={setFillColor}
-          strokeWidth={strokeWidth}
-          setStrokeWidth={setStrokeWidth}
-          onNoFill={() => setFillColor("rgba(0,0,0,0)")}
           onAddImage={handleAddImage}
           onDeleteSelected={handleDeleteSelected}
           onClear={() => {
