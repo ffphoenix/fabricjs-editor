@@ -59,6 +59,7 @@ const getDrawRectHandlers = (
     onMouseDown,
     onMouseUp,
     onMouseMove,
+    handlerDisposer: () => null,
   };
 };
 export default getDrawRectHandlers;

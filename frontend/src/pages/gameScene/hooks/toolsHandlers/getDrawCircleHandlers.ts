@@ -59,6 +59,7 @@ const getDrawCircleHandlers = (
     onMouseDown,
     onMouseUp,
     onMouseMove,
+    handlerDisposer: () => null,
   };
 };
 export default getDrawCircleHandlers;

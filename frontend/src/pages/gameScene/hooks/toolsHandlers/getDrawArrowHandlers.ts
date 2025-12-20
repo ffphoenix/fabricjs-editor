@@ -1,4 +1,4 @@
-import { type MutableRefObject, useRef } from "react";
+import { type MutableRefObject } from "react";
 import { type Canvas, type TPointerEventInfo } from "fabric";
 import type { MouseHandlers } from "../useCanvasMouseEvents";
 import * as fabric from "fabric";
@@ -110,6 +110,7 @@ const getDrawArrowHandlers = (
     onMouseDown,
     onMouseUp,
     onMouseMove,
+    handlerDisposer: () => null,
   };
 };
 export default getDrawArrowHandlers;

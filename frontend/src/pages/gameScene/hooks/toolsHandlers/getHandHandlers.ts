@@ -39,6 +39,7 @@ const useHandHandler = (
     onMouseDown,
     onMouseUp,
     onMouseMove,
+    handlerDisposer: () => null,
   };
 };
 export default useHandHandler;

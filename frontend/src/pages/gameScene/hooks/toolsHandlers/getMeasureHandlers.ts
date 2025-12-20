@@ -101,6 +101,7 @@ const getMeasureHandlers = (canvasRef: MutableRefObject<Canvas | null>): MouseHa
     onMouseDown,
     onMouseUp,
     onMouseMove,
+    handlerDisposer: () => null,
   };
 };
 export default getMeasureHandlers;

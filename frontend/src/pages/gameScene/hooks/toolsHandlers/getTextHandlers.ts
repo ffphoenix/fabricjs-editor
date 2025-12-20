@@ -35,6 +35,7 @@ const useDrawRectHandlers = (canvasRef: MutableRefObject<Canvas | null>): MouseH
     onMouseDown,
     onMouseUp,
     onMouseMove,
+    handlerDisposer: () => null,
   };
 };
 export default useDrawRectHandlers;

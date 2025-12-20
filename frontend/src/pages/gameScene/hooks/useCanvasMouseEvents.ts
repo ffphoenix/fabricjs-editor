@@ -1,22 +1,21 @@
 import { type Canvas, type TPointerEventInfo } from "fabric";
 import { type MutableRefObject, useEffect, useRef } from "react";
 import SceneStore, { type Tool } from "../store/SceneStore";
-import { reaction } from "mobx";
+import { autorun } from "mobx";
 import * as fabric from "fabric";
 import getHandHandlers from "./toolsHandlers/getHandHandlers";
 import getEmptyHandlers from "./toolsHandlers/getEmptyHandlers";
 import getDrawRectHandlers from "./toolsHandlers/getDrawRectHandlers";
 import getDrawCircleHandlers from "./toolsHandlers/getDrawCircleHandlers";
-import useTextHandlers from "./toolsHandlers/getTextHandlers";
 import getDrawArrowHandlers from "./toolsHandlers/getDrawArrowHandlers";
 import getDrawPencilHandlers from "./toolsHandlers/getDrawPencilHandlers";
-import getMeasureHandlers from "./toolsHandlers/getMeasureHandlers";
 import getTextHandlers from "./toolsHandlers/getTextHandlers";
 
 export type MouseHandlers = {
   onMouseDown: (options: TPointerEventInfo) => void;
   onMouseUp: (options: TPointerEventInfo) => void;
   onMouseMove: (options: TPointerEventInfo) => void;
+  handlerDisposer: () => void;
 };
 
 const getMouseHandlers = (
@@ -44,36 +43,6 @@ const getMouseHandlers = (
   return handlersMap[activeTool]() ?? getEmptyHandlers();
 };
 
-// const setActiveToolSubscriptions = (
-//   canvasRef: MutableRefObject<Canvas | null>,
-//   unsubscribeCallbackRef: MutableRefObject<() => void>,
-//   drawingState: MutableRefObject<{ origin?: fabric.Point; activeObject?: fabric.Object | null }>,
-// ) => {
-//   console.log("setActiveToolSubscriptions");
-//   if (canvasRef.current === null) return;
-//   const canvas = canvasRef.current;
-//   canvas.defaultCursor = "default";
-//   canvas.hoverCursor = "move";
-//   canvas.selection = SceneStore.activeTool === "select";
-//   canvas.isDrawingMode = false;
-//
-//   const { onMouseDown, onMouseUp, onMouseMove } = getMouseHandlers(
-//     SceneStore.activeTool,
-//     canvasRef,
-//     drawingState,
-//     isPanningRef,
-//   );
-//   canvas.on("mouse:down", onMouseDown);
-//   canvas.on("mouse:move", onMouseMove);
-//   canvas.on("mouse:up", onMouseUp);
-//
-//   unsubscribeCallbackRef.current = () => {
-//     canvas.off("mouse:down", onMouseDown);
-//     canvas.off("mouse:move", onMouseMove);
-//     canvas.off("mouse:up", onMouseUp);
-//   };
-// };
-
 const useCanvasMouseEvents = (canvasRef: MutableRefObject<Canvas | null>) => {
   const drawingState = useRef<{
     origin?: fabric.Point;
@@ -86,28 +55,23 @@ const useCanvasMouseEvents = (canvasRef: MutableRefObject<Canvas | null>) => {
     head: fabric.Triangle;
   } | null>(null);
 
-  const canvas = canvasRef.current;
-
   const unsubscribeCallbackRef = useRef<() => void>(() => {});
-  // useEffect(() => {
-  //   if (!canvas) return;
-  //   setActiveToolSubscriptions(canvasRef, unsubscribeCallbackRef, drawingState);
-  // }, [canvas]);
-
-  reaction(
-    () => SceneStore.activeTool,
-    () => {
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    console.log("=====> useEffect useCanvasMouseEvents:");
+    const autorunDispose = autorun(() => {
       unsubscribeCallbackRef.current();
       console.log("activeTool changed");
-      console.log("setActiveToolSubscriptions");
+
       if (canvasRef.current === null) return;
       const canvas = canvasRef.current;
+
       canvas.defaultCursor = "default";
       canvas.hoverCursor = "move";
       canvas.selection = SceneStore.activeTool === "select";
       canvas.isDrawingMode = false;
 
-      const { onMouseDown, onMouseUp, onMouseMove } = getMouseHandlers(
+      const { onMouseDown, onMouseUp, onMouseMove, handlerDisposer } = getMouseHandlers(
         SceneStore.activeTool,
         canvasRef,
         drawingState,
@@ -119,12 +83,17 @@ const useCanvasMouseEvents = (canvasRef: MutableRefObject<Canvas | null>) => {
         "mouse:move": onMouseMove,
         "mouse:up": onMouseUp,
       });
-
+      canvas.renderAll();
       unsubscribeCallbackRef.current = () => {
         mouseEventsDisposer();
+        handlerDisposer();
       };
-    },
-  );
+    });
+    return () => {
+      autorunDispose();
+      unsubscribeCallbackRef.current();
+    };
+  });
 };
 
 export default useCanvasMouseEvents;

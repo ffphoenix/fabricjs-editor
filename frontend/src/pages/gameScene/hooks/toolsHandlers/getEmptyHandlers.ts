@@ -5,6 +5,7 @@ const getEmptyHandlers = (): MouseHandlers => {
     onMouseDown: () => {},
     onMouseUp: () => {},
     onMouseMove: () => {},
+    handlerDisposer: () => {},
   };
 };
 export default getEmptyHandlers;
