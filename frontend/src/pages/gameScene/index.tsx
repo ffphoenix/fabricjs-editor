@@ -273,8 +273,6 @@ const GameScenePage: React.FC = () => {
       // }
       // Measure tool live update
       // Arrow live update
-
-      canvas.requestRenderAll();
     };
 
     const onMouseUp = () => {
@@ -284,21 +282,6 @@ const GameScenePage: React.FC = () => {
       //   captureState();
       //   return;
       // }
-      if (tool === "measure") {
-        // nothing on mouse up; finishing is on second click in onMouseDown
-        return;
-      }
-    };
-
-    // Bind handlers only when not in pen or select mode for drawing shapes, but we can keep them active safely
-    canvas.on("mouse:down", onMouseDown);
-    canvas.on("mouse:move", onMouseMove);
-    canvas.on("mouse:up", onMouseUp);
-
-    return () => {
-      canvas.off("mouse:down", onMouseDown);
-      canvas.off("mouse:move", onMouseMove);
-      canvas.off("mouse:up", onMouseUp);
     };
   }, [tool, strokeColor, strokeWidth, fillColor]);
 
@@ -365,6 +348,7 @@ const GameScenePage: React.FC = () => {
       fabric.Image.fromURL(
         dataUrl,
         (img) => {
+          console.log("Image loaded:", img);
           const cw = canvas.getWidth() || 800;
           const ch = canvas.getHeight() || 600;
           const padding = 20;

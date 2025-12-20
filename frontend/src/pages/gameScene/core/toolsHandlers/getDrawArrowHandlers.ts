@@ -1,16 +1,12 @@
 import { type MutableRefObject } from "react";
 import { type Canvas, type TPointerEventInfo } from "fabric";
-import type { MouseHandlers } from "../useCanvasMouseEvents";
+import type { ArrowDrawingRef, MouseHandlers } from "../../hooks/useCanvasMouseEvents";
 import * as fabric from "fabric";
 import SceneStore from "../../store/SceneStore";
 
 const getDrawArrowHandlers = (
   canvasRef: MutableRefObject<Canvas | null>,
-  arrowDrawingRef: MutableRefObject<{
-    start: fabric.Point;
-    line: fabric.Line;
-    head: fabric.Triangle;
-  } | null>,
+  arrowDrawingRef: ArrowDrawingRef,
 ): MouseHandlers => {
   const canvas = canvasRef.current;
   if (canvas === null) throw new Error("Canvas is not initialized");

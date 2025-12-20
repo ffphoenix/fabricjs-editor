@@ -1,4 +1,4 @@
-import type { MouseHandlers } from "../useCanvasMouseEvents";
+import type { MouseHandlers } from "../../hooks/useCanvasMouseEvents";
 
 const getEmptyHandlers = (): MouseHandlers => {
   return {

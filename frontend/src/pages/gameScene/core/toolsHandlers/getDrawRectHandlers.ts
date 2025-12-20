@@ -1,10 +1,10 @@
 import { type MutableRefObject } from "react";
 import { type Canvas, type TPointerEventInfo } from "fabric";
-import type { MouseHandlers } from "../useCanvasMouseEvents";
+import type { MouseHandlers } from "../../hooks/useCanvasMouseEvents";
 import * as fabric from "fabric";
 import SceneStore from "../../store/SceneStore";
 
-const getDrawCircleHandlers = (
+const getDrawRectHandlers = (
   canvasRef: MutableRefObject<Canvas | null>,
   drawingState: MutableRefObject<{ origin?: fabric.Point; activeObject?: fabric.Object | null }>,
 ): MouseHandlers => {
@@ -16,21 +16,20 @@ const getDrawCircleHandlers = (
     const point = canvas.getScenePoint(options.e);
     drawingState.current.origin = new fabric.Point(point.x, point.y);
 
-    const circle = new fabric.Circle({
+    const rect = new fabric.Rect({
       left: point.x,
       top: point.y,
-      radius: 1,
+      width: 1,
+      height: 1,
       fill: SceneStore.tools.drawTools.fillColor,
       stroke: SceneStore.tools.drawTools.strokeColor,
       strokeWidth: SceneStore.tools.drawTools.strokeWidth,
-      originX: "center",
-      originY: "center",
       selectable: false,
       objectCaching: false,
     });
-    drawingState.current.activeObject = circle;
-    circle.set("layerId", SceneStore.activeLayerId);
-    canvas.add(circle);
+    drawingState.current.activeObject = rect;
+    rect.set("layerId", SceneStore.activeLayerId);
+    canvas.add(rect);
   };
 
   const onMouseMove = (options: TPointerEventInfo) => {
@@ -38,10 +37,11 @@ const getDrawCircleHandlers = (
     const origin = drawingState.current.origin;
     if (!active || !origin) return;
     const point = canvas.getScenePoint(options.e);
-    const dx = point.x - origin.x;
-    const dy = point.y - origin.y;
-    const r = Math.sqrt(dx * dx + dy * dy);
-    active.set({ left: origin.x, top: origin.y, radius: r });
+    const left = Math.min(point.x, origin.x);
+    const top = Math.min(point.y, origin.y);
+    const width = Math.abs(point.x - origin.x);
+    const height = Math.abs(point.y - origin.y);
+    active.set({ left, top, width, height });
     canvas.requestRenderAll();
   };
 
@@ -62,4 +62,4 @@ const getDrawCircleHandlers = (
     handlerDisposer: () => null,
   };
 };
-export default getDrawCircleHandlers;
+export default getDrawRectHandlers;

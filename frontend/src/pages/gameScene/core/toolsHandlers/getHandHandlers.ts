@@ -1,9 +1,9 @@
 import { type MutableRefObject } from "react";
 import { type Canvas, type TPointerEventInfo } from "fabric";
-import type { MouseHandlers } from "../useCanvasMouseEvents";
+import type { MouseHandlers } from "../../hooks/useCanvasMouseEvents";
 import * as fabric from "fabric";
 
-const useHandHandler = (
+const getHandHandlers = (
   canvasRef: MutableRefObject<Canvas | null>,
   isPanningRef: MutableRefObject<boolean>,
 ): MouseHandlers => {
@@ -12,14 +12,19 @@ const useHandHandler = (
 
   canvas.defaultCursor = "grab";
   canvas.hoverCursor = "grab";
-
   const onMouseDown = () => {
     isPanningRef.current = true;
     canvas.setCursor("grabbing");
+    canvas.defaultCursor = "grabbing";
+
     canvas.requestRenderAll();
   };
 
   const onMouseMove = (options: TPointerEventInfo) => {
+    if (!isPanningRef.current) return;
+    canvas.setCursor("grabbing");
+    canvas.defaultCursor = "grabbing";
+
     const event = options.e as MouseEvent;
     const vpt = canvas.viewportTransform || fabric.iMatrix.concat();
     // movementX/Y are in CSS pixels relative to the element
@@ -32,6 +37,7 @@ const useHandHandler = (
   const onMouseUp = () => {
     isPanningRef.current = false;
     canvas.setCursor("grab");
+    canvas.defaultCursor = "grab";
     canvas.requestRenderAll();
   };
 
@@ -42,4 +48,4 @@ const useHandHandler = (
     handlerDisposer: () => null,
   };
 };
-export default useHandHandler;
+export default getHandHandlers;

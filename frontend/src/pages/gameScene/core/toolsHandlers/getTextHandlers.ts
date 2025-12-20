@@ -1,6 +1,6 @@
 import { type MutableRefObject } from "react";
 import { type Canvas, type TPointerEventInfo } from "fabric";
-import type { MouseHandlers } from "../useCanvasMouseEvents";
+import type { MouseHandlers } from "../../hooks/useCanvasMouseEvents";
 import * as fabric from "fabric";
 import SceneStore from "../../store/SceneStore";
 

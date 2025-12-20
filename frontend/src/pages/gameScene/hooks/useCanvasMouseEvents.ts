@@ -3,13 +3,14 @@ import { type MutableRefObject, useEffect, useRef } from "react";
 import SceneStore, { type Tool } from "../store/SceneStore";
 import { autorun } from "mobx";
 import * as fabric from "fabric";
-import getHandHandlers from "./toolsHandlers/getHandHandlers";
-import getEmptyHandlers from "./toolsHandlers/getEmptyHandlers";
-import getDrawRectHandlers from "./toolsHandlers/getDrawRectHandlers";
-import getDrawCircleHandlers from "./toolsHandlers/getDrawCircleHandlers";
-import getDrawArrowHandlers from "./toolsHandlers/getDrawArrowHandlers";
-import getDrawPencilHandlers from "./toolsHandlers/getDrawPencilHandlers";
-import getTextHandlers from "./toolsHandlers/getTextHandlers";
+import getHandHandlers from "../core/toolsHandlers/getHandHandlers";
+import getEmptyHandlers from "../core/toolsHandlers/getEmptyHandlers";
+import getDrawRectHandlers from "../core/toolsHandlers/getDrawRectHandlers";
+import getDrawCircleHandlers from "../core/toolsHandlers/getDrawCircleHandlers";
+import getDrawArrowHandlers from "../core/toolsHandlers/getDrawArrowHandlers";
+import getDrawPencilHandlers from "../core/toolsHandlers/getDrawPencilHandlers";
+import getTextHandlers from "../core/toolsHandlers/getTextHandlers";
+import getMeasureHandlers from "../core/toolsHandlers/getMeasureHandlers";
 
 export type MouseHandlers = {
   onMouseDown: (options: TPointerEventInfo) => void;
@@ -18,16 +19,26 @@ export type MouseHandlers = {
   handlerDisposer: () => void;
 };
 
+export type ArrowDrawingRef = MutableRefObject<{
+  start: fabric.Point;
+  line: fabric.Line;
+  head: fabric.Triangle;
+} | null>;
+
+export type MeasuringRef = MutableRefObject<{
+  start: fabric.Point;
+  line: fabric.Line;
+  arrow: fabric.Triangle;
+  label: fabric.Text;
+} | null>;
+
 const getMouseHandlers = (
   activeTool: Tool,
   canvasRef: MutableRefObject<Canvas | null>,
   drawingState: MutableRefObject<{ origin?: fabric.Point; activeObject?: fabric.Object | null }>,
   isPanningRef: MutableRefObject<boolean>,
-  arrowDrawingRef: MutableRefObject<{
-    start: fabric.Point;
-    line: fabric.Line;
-    head: fabric.Triangle;
-  } | null>,
+  arrowDrawingRef: ArrowDrawingRef,
+  measuringRef: MeasuringRef,
 ): MouseHandlers => {
   const handlersMap = {
     hand: () => getHandHandlers(canvasRef, isPanningRef),
@@ -37,10 +48,28 @@ const getMouseHandlers = (
     circle: () => getDrawCircleHandlers(canvasRef, drawingState),
     arrow: () => getDrawArrowHandlers(canvasRef, arrowDrawingRef),
     text: () => getTextHandlers(canvasRef),
-    measure: () => getEmptyHandlers(),
+    measure: () => getMeasureHandlers(canvasRef, measuringRef),
     moveLayer: () => getEmptyHandlers(),
   };
   return handlersMap[activeTool]() ?? getEmptyHandlers();
+};
+
+const cleanToolsAfterChange = (canvas: Canvas, arrowDrawingRef: ArrowDrawingRef, measuringRef: MeasuringRef) => {
+  if (SceneStore.activeTool !== "measure" && measuringRef.current) {
+    const { line, arrow, label } = measuringRef.current;
+    canvas.remove(line);
+    canvas.remove(arrow);
+    canvas.remove(label);
+    measuringRef.current = null;
+    canvas.requestRenderAll();
+  }
+  if (SceneStore.activeTool !== "arrow" && arrowDrawingRef.current) {
+    const { line, head } = arrowDrawingRef.current;
+    canvas.remove(line);
+    canvas.remove(head);
+    arrowDrawingRef.current = null;
+    canvas.requestRenderAll();
+  }
 };
 
 const useCanvasMouseEvents = (canvasRef: MutableRefObject<Canvas | null>) => {
@@ -55,6 +84,13 @@ const useCanvasMouseEvents = (canvasRef: MutableRefObject<Canvas | null>) => {
     head: fabric.Triangle;
   } | null>(null);
 
+  const measuringRef = useRef<{
+    start: fabric.Point;
+    line: fabric.Line;
+    arrow: fabric.Triangle;
+    label: fabric.Text;
+  } | null>(null);
+
   const unsubscribeCallbackRef = useRef<() => void>(() => {});
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -66,6 +102,7 @@ const useCanvasMouseEvents = (canvasRef: MutableRefObject<Canvas | null>) => {
       if (canvasRef.current === null) return;
       const canvas = canvasRef.current;
 
+      cleanToolsAfterChange(canvas, arrowDrawingRef, measuringRef);
       canvas.defaultCursor = "default";
       canvas.hoverCursor = "move";
       canvas.selection = SceneStore.activeTool === "select";
@@ -77,6 +114,7 @@ const useCanvasMouseEvents = (canvasRef: MutableRefObject<Canvas | null>) => {
         drawingState,
         isPanningRef,
         arrowDrawingRef,
+        measuringRef,
       );
       const mouseEventsDisposer = canvas.on({
         "mouse:down": onMouseDown,
