@@ -8,22 +8,12 @@ import useWheelZoomHandler from "./hooks/useWheelZoomHandler";
 import SceneStore from "./store/SceneStore";
 import applyLayerPropsToObjects from "./core/applyLayerPropsToObjects";
 import useCanvasMouseEvents from "./hooks/useCanvasMouseEvents";
+import useKeyboardHotkeys from "./hooks/useKeyboardHotkeys";
 
 export type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
 
 const GameScenePage: React.FC = () => {
   const fabricRef = useRef<fabric.Canvas | null>(null);
-  const measuringRef = useRef<{
-    start: fabric.Point;
-    line: fabric.Line;
-    arrow: fabric.Triangle;
-    label: fabric.Text;
-  } | null>(null);
-  const arrowDrawingRef = useRef<{
-    start: fabric.Point;
-    line: fabric.Line;
-    head: fabric.Triangle;
-  } | null>(null);
 
   const { canvas, canvasRef, canvasElRef, containerRef } = useCanvas({
     backgroundColor: "#f8fafc",
@@ -33,92 +23,13 @@ const GameScenePage: React.FC = () => {
   fabricRef.current = canvas;
   useWheelZoomHandler(canvasRef);
   useCanvasMouseEvents(canvasRef);
+  useKeyboardHotkeys(canvasRef);
   console.log("GameScenePage rendered");
 
   const [tool, setTool] = useState<Tool>("select");
   const [strokeColor, setStrokeColor] = useState<string>("#222222");
   const [fillColor, setFillColor] = useState<string>("rgba(0,0,0,0)");
   const [strokeWidth, setStrokeWidth] = useState<number>(3);
-
-  // Helper: delete selected objects
-  const handleDeleteSelected = () => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    const active = canvas.getActiveObjects();
-    if (active.length) {
-      active.forEach((o) => canvas.remove(o));
-      canvas.discardActiveObject();
-      canvas.requestRenderAll();
-      captureState();
-    }
-  };
-
-  // Keyboard: Delete/Backspace to remove selected objects
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      // ignore when typing in inputs/textareas or contenteditable
-      const target = e.target as HTMLElement | null;
-      const tag = (target?.tagName || "").toLowerCase();
-      const isEditable = tag === "input" || tag === "textarea" || (target && (target as HTMLElement).isContentEditable);
-
-      // If an IText is actively editing, do not intercept
-      const activeObj = fabricRef.current?.getActiveObject() as any;
-      const isFabricTextEditing = !!(activeObj && typeof activeObj.isEditing === "boolean" && activeObj.isEditing);
-
-      if (isEditable || isFabricTextEditing) return;
-
-      if (e.key === "Delete" || e.key === "Backspace") {
-        handleDeleteSelected();
-        // prevent navigating back on Backspace when nothing is focused
-        e.preventDefault();
-        return;
-      }
-
-      // Escape: cancel measuring / arrow drawing
-      if (e.key === "Escape") {
-        const canvas = fabricRef.current;
-        if (canvas && measuringRef.current) {
-          const { line, arrow, label } = measuringRef.current;
-          canvas.remove(line);
-          canvas.remove(arrow);
-          canvas.remove(label);
-          measuringRef.current = null;
-          canvas.requestRenderAll();
-          e.preventDefault();
-          return;
-        }
-        if (canvas && arrowDrawingRef.current) {
-          const { line, head } = arrowDrawingRef.current;
-          canvas.remove(line);
-          canvas.remove(head);
-          arrowDrawingRef.current = null;
-          canvas.requestRenderAll();
-          e.preventDefault();
-          return;
-        }
-      }
-
-      // Undo / Redo shortcuts
-      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
-      if (isCtrlOrMeta && e.key.toLowerCase() === "z") {
-        if (e.shiftKey) {
-          redo();
-        } else {
-          undo();
-        }
-        e.preventDefault();
-        return;
-      }
-      if (isCtrlOrMeta && e.key.toLowerCase() === "y") {
-        redo();
-        e.preventDefault();
-        return;
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
 
   // ---- Undo/Redo History ----
   type HistoryEntry = { json: string; panX: number; panY: number };
@@ -285,41 +196,15 @@ const GameScenePage: React.FC = () => {
     };
   }, [tool, strokeColor, strokeWidth, fillColor]);
 
-  // If leaving measure tool while measuring, cancel and clean up
-  useEffect(() => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    return () => {
-      // noop on unmount handled elsewhere
-    };
-  }, []);
-
-  useEffect(() => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    if (tool !== "measure" && measuringRef.current) {
-      const { line, arrow, label } = measuringRef.current;
-      canvas.remove(line);
-      canvas.remove(arrow);
-      canvas.remove(label);
-      measuringRef.current = null;
-      canvas.requestRenderAll();
-    }
-    if (tool !== "arrow" && arrowDrawingRef.current) {
-      const { line, head } = arrowDrawingRef.current;
-      canvas.remove(line);
-      canvas.remove(head);
-      arrowDrawingRef.current = null;
-      canvas.requestRenderAll();
-    }
-  }, [tool]);
-
   // Capture changes for various canvas events
   useEffect(() => {
-    const canvas = fabricRef.current;
+    const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const onObjectModified = () => captureState();
+    const onObjectModified = () => {
+      console.log("object modified");
+      captureState();
+    };
     const onPathCreated = () => captureState();
     const onEditingExited = () => captureState();
 
@@ -328,6 +213,9 @@ const GameScenePage: React.FC = () => {
     canvas.on("path:created", onPathCreated as any);
     // text editing finished
     canvas.on("editing:exited", onEditingExited as any);
+    canvas.on("object:added", (e) => {
+      console.log("object added", e);
+    });
 
     return () => {
       canvas.off("object:modified", onObjectModified);
@@ -386,7 +274,6 @@ const GameScenePage: React.FC = () => {
       <div className="absolute left-0 top-0 h-full p-3 border-r bg-white/90 backdrop-blur-sm z-1000">
         <ToolMenu
           onAddImage={handleAddImage}
-          onDeleteSelected={handleDeleteSelected}
           onClear={() => {
             const canvas = fabricRef.current;
             if (!canvas) return;

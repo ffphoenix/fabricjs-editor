@@ -10,14 +10,17 @@ const getDrawPencilHandlers = (canvasRef: MutableRefObject<Canvas | null>): Mous
   const canvas = canvasRef.current;
   if (canvas === null) throw new Error("Canvas is not initialized");
 
-  const autorunDispose = autorun(() => {
-    console.log("autorun getDrawPencilHandlers");
-    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-    canvas.isDrawingMode = true;
-    const brush = canvas.freeDrawingBrush;
-    brush.color = SceneStore.tools.drawTools.strokeColor;
-    brush.width = SceneStore.tools.drawTools.strokeWidth;
-  });
+  const autorunDispose = autorun(
+    () => {
+      console.log("autorun getDrawPencilHandlers");
+      canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+      canvas.isDrawingMode = true;
+      const brush = canvas.freeDrawingBrush;
+      brush.color = SceneStore.tools.drawTools.strokeColor;
+      brush.width = SceneStore.tools.drawTools.strokeWidth;
+    },
+    { delay: 500 },
+  );
 
   return { ...getEmptyHandlers(), handlerDisposer: () => autorunDispose() };
 };

@@ -8,12 +8,11 @@ import SceneStore from "../store/SceneStore";
 import { observer } from "mobx-react-lite";
 
 type Props = {
-  onDeleteSelected: () => void;
   onClear: () => void;
   onAddImage: (file: File) => void;
 };
 
-const ToolMenu: React.FC<Props> = ({ onDeleteSelected, onClear, onAddImage }) => {
+const ToolMenu: React.FC<Props> = ({ onClear, onAddImage }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   return (
@@ -96,7 +95,7 @@ const ToolMenu: React.FC<Props> = ({ onDeleteSelected, onClear, onAddImage }) =>
           raised
           icon={<TrashIcon />}
           className="tooltip-button"
-          onClick={onDeleteSelected}
+          onClick={() => {}}
         />
         <Button
           aria-label="Clear Canvas"
