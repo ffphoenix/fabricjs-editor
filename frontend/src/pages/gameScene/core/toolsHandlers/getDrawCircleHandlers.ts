@@ -1,20 +1,17 @@
 import { type MutableRefObject } from "react";
 import { type Canvas, type TPointerEventInfo } from "fabric";
-import type { MouseHandlers } from "../../hooks/useCanvasMouseEvents";
+import type { DrawingRef, MouseHandlers } from "../../hooks/useCanvasMouseEvents";
 import * as fabric from "fabric";
 import SceneStore from "../../store/SceneStore";
 
-const getDrawCircleHandlers = (
-  canvasRef: MutableRefObject<Canvas | null>,
-  drawingState: MutableRefObject<{ origin?: fabric.Point; activeObject?: fabric.Object | null }>,
-): MouseHandlers => {
+const getDrawCircleHandlers = (canvasRef: MutableRefObject<Canvas | null>, drawingRef: DrawingRef): MouseHandlers => {
   const canvas = canvasRef.current;
   if (canvas === null) throw new Error("Canvas is not initialized");
 
   const onMouseDown = (options: TPointerEventInfo) => {
     // @TODO: pick correct point
     const point = canvas.getScenePoint(options.e);
-    drawingState.current.origin = new fabric.Point(point.x, point.y);
+    drawingRef.current.origin = new fabric.Point(point.x, point.y);
 
     const circle = new fabric.Circle({
       left: point.x,
@@ -28,14 +25,14 @@ const getDrawCircleHandlers = (
       selectable: false,
       objectCaching: false,
     });
-    drawingState.current.activeObject = circle;
+    drawingRef.current.activeObject = circle;
     circle.set("layerId", SceneStore.activeLayerId);
     canvas.add(circle);
   };
 
   const onMouseMove = (options: TPointerEventInfo) => {
-    const active = drawingState.current.activeObject;
-    const origin = drawingState.current.origin;
+    const active = drawingRef.current.activeObject;
+    const origin = drawingRef.current.origin;
     if (!active || !origin) return;
     const point = canvas.getScenePoint(options.e);
     const dx = point.x - origin.x;
@@ -46,13 +43,13 @@ const getDrawCircleHandlers = (
   };
 
   const onMouseUp = () => {
-    const active = drawingState.current.activeObject;
+    const active = drawingRef.current.activeObject;
     if (active) {
       active.set({ selectable: true, objectCaching: true });
     }
     canvas.requestRenderAll();
-    drawingState.current.activeObject = null;
-    drawingState.current.origin = undefined;
+    drawingRef.current.activeObject = null;
+    drawingRef.current.origin = undefined;
   };
 
   return {

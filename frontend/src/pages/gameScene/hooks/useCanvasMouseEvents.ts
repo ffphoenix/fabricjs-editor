@@ -32,10 +32,12 @@ export type MeasuringRef = MutableRefObject<{
   label: fabric.Text;
 } | null>;
 
+export type DrawingRef = MutableRefObject<{ origin?: fabric.Point; activeObject?: fabric.Object | null }>;
+
 const getMouseHandlers = (
   activeTool: Tool,
   canvasRef: MutableRefObject<Canvas | null>,
-  drawingState: MutableRefObject<{ origin?: fabric.Point; activeObject?: fabric.Object | null }>,
+  drawingRef: DrawingRef,
   isPanningRef: MutableRefObject<boolean>,
   arrowDrawingRef: ArrowDrawingRef,
   measuringRef: MeasuringRef,
@@ -44,8 +46,8 @@ const getMouseHandlers = (
     hand: () => getHandHandlers(canvasRef, isPanningRef),
     select: () => getEmptyHandlers(),
     pencil: () => getDrawPencilHandlers(canvasRef),
-    rect: () => getDrawRectHandlers(canvasRef, drawingState),
-    circle: () => getDrawCircleHandlers(canvasRef, drawingState),
+    rect: () => getDrawRectHandlers(canvasRef, drawingRef),
+    circle: () => getDrawCircleHandlers(canvasRef, drawingRef),
     arrow: () => getDrawArrowHandlers(canvasRef, arrowDrawingRef),
     text: () => getTextHandlers(canvasRef),
     measure: () => getMeasureHandlers(canvasRef, measuringRef),
