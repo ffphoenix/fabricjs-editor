@@ -89,11 +89,21 @@ const getMeasureHandlers = (canvasRef: MutableRefObject<Canvas | null>, measurin
 
   const onMouseUp = () => {};
 
+  const handlerDisposer = () => {
+    if (!measuringRef.current) return;
+    const { line, arrow, label } = measuringRef.current;
+    canvas.remove(line);
+    canvas.remove(arrow);
+    canvas.remove(label);
+    measuringRef.current = null;
+    canvas.requestRenderAll();
+  };
+
   return {
     onMouseDown,
     onMouseUp,
     onMouseMove,
-    handlerDisposer: () => null,
+    handlerDisposer,
   };
 };
 export default getMeasureHandlers;

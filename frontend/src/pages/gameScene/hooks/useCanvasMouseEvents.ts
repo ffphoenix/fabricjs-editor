@@ -54,24 +54,6 @@ const getMouseHandlers = (
   return handlersMap[activeTool]() ?? getEmptyHandlers();
 };
 
-const cleanToolsAfterChange = (canvas: Canvas, arrowDrawingRef: ArrowDrawingRef, measuringRef: MeasuringRef) => {
-  if (SceneStore.activeTool !== "measure" && measuringRef.current) {
-    const { line, arrow, label } = measuringRef.current;
-    canvas.remove(line);
-    canvas.remove(arrow);
-    canvas.remove(label);
-    measuringRef.current = null;
-    canvas.requestRenderAll();
-  }
-  if (SceneStore.activeTool !== "arrow" && arrowDrawingRef.current) {
-    const { line, head } = arrowDrawingRef.current;
-    canvas.remove(line);
-    canvas.remove(head);
-    arrowDrawingRef.current = null;
-    canvas.requestRenderAll();
-  }
-};
-
 const useCanvasMouseEvents = (canvasRef: MutableRefObject<Canvas | null>) => {
   const drawingState = useRef<{
     origin?: fabric.Point;
@@ -94,7 +76,6 @@ const useCanvasMouseEvents = (canvasRef: MutableRefObject<Canvas | null>) => {
   const unsubscribeCallbackRef = useRef<() => void>(() => {});
   useEffect(() => {
     if (!canvasRef.current) return;
-    console.log("=====> useEffect useCanvasMouseEvents:");
     const autorunDispose = autorun(() => {
       unsubscribeCallbackRef.current();
       console.log("activeTool changed");
@@ -102,7 +83,6 @@ const useCanvasMouseEvents = (canvasRef: MutableRefObject<Canvas | null>) => {
       if (canvasRef.current === null) return;
       const canvas = canvasRef.current;
 
-      cleanToolsAfterChange(canvas, arrowDrawingRef, measuringRef);
       canvas.defaultCursor = "default";
       canvas.hoverCursor = "move";
       canvas.selection = SceneStore.activeTool === "select";

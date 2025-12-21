@@ -102,11 +102,20 @@ const getDrawArrowHandlers = (
     canvas.requestRenderAll();
   };
 
+  const handlerDisposer = () => {
+    if (!arrowDrawingRef.current) return;
+    const { line, head } = arrowDrawingRef.current;
+    canvas.remove(line);
+    canvas.remove(head);
+    arrowDrawingRef.current = null;
+    canvas.requestRenderAll();
+  };
+
   return {
     onMouseDown,
     onMouseUp,
     onMouseMove,
-    handlerDisposer: () => null,
+    handlerDisposer,
   };
 };
 export default getDrawArrowHandlers;
