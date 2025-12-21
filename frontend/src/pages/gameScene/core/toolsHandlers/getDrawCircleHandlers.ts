@@ -26,7 +26,6 @@ const getDrawCircleHandlers = (canvasRef: MutableRefObject<Canvas | null>, drawi
       objectCaching: false,
     });
     drawingRef.current.activeObject = circle;
-    circle.set("layerId", SceneStore.activeLayerId);
     canvas.add(circle);
   };
 

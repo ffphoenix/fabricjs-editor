@@ -1,5 +1,6 @@
 import { type MutableRefObject, useEffect } from "react";
 import type { Canvas } from "fabric";
+import undoSceneAction from "../store/actions/undoSceneAction";
 
 const handleDeleteSelected = (canvas: Canvas) => {
   if (!canvas) return;
@@ -70,6 +71,8 @@ const useKeyboardHotkeys = (canvasRef: MutableRefObject<Canvas | null>) => {
         } else {
           // undo();
         }
+        undoSceneAction(canvasRef);
+        console.log("Undo/Redo pressed");
         e.preventDefault();
         return;
       }

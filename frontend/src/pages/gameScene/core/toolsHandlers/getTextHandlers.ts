@@ -18,7 +18,6 @@ const useDrawRectHandlers = (canvasRef: MutableRefObject<Canvas | null>): MouseH
       fontSize: SceneStore.tools.textTool.fontSize,
       editable: true,
     });
-    text.set("layerId", SceneStore.activeLayerId);
     canvas.add(text);
     canvas.setActiveObject(text);
     if (typeof text.enterEditing === "function") {

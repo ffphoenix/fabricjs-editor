@@ -96,7 +96,6 @@ const getDrawArrowHandlers = (
       selectable: true,
       objectCaching: true,
     });
-    group.set("layerId", SceneStore.activeLayerId);
     canvas.add(group);
     canvas.setActiveObject(group);
     canvas.requestRenderAll();

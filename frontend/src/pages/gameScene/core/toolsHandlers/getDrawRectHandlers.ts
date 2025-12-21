@@ -25,7 +25,6 @@ const getDrawRectHandlers = (canvasRef: MutableRefObject<Canvas | null>, drawing
       objectCaching: false,
     });
     drawingRef.current.activeObject = rect;
-    rect.set("layerId", SceneStore.activeLayerId);
     canvas.add(rect);
   };
 

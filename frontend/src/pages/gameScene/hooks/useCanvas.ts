@@ -1,17 +1,15 @@
 import { useEffect, useRef } from "react";
 import * as fabric from "fabric";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
-import type { TCanvasOptions } from "fabric/dist/src/canvas/CanvasOptions";
 import handleCanvasResize from "../core/handleCanvasResize";
+import type { CanvasOptions } from "fabric";
 
-const defaultCanvasOptions: TCanvasOptions = {
+const defaultCanvasOptions: Partial<CanvasOptions> = {
   backgroundColor: "#f8fafc",
   selection: true,
   preserveObjectStacking: true,
 };
 
-export default (canvasOptions: TCanvasOptions) => {
+export default (canvasOptions: Partial<CanvasOptions>) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<fabric.Canvas | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);

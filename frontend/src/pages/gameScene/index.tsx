@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import ToolMenu from "./components/ToolMenu";
 import "./style.css";
@@ -9,27 +9,20 @@ import SceneStore from "./store/SceneStore";
 import applyLayerPropsToObjects from "./core/applyLayerPropsToObjects";
 import useCanvasMouseEvents from "./hooks/useCanvasMouseEvents";
 import useKeyboardHotkeys from "./hooks/useKeyboardHotkeys";
-
-export type Tool = "select" | "pen" | "rect" | "circle" | "arrow" | "text" | "measure" | "hand" | "moveLayer";
+import { generateUUID } from "./utils/uuid";
+import "./declarations/FabricObject";
+import SceneHistoryStore from "./store/SceneHistoryStore";
 
 const GameScenePage: React.FC = () => {
-  const fabricRef = useRef<fabric.Canvas | null>(null);
-
-  const { canvas, canvasRef, canvasElRef, containerRef } = useCanvas({
+  const { canvasRef, canvasElRef, containerRef } = useCanvas({
     backgroundColor: "#f8fafc",
     selection: true,
     preserveObjectStacking: true,
   });
-  fabricRef.current = canvas;
   useWheelZoomHandler(canvasRef);
   useCanvasMouseEvents(canvasRef);
   useKeyboardHotkeys(canvasRef);
   console.log("GameScenePage rendered");
-
-  const [tool, setTool] = useState<Tool>("select");
-  const [strokeColor, setStrokeColor] = useState<string>("#222222");
-  const [fillColor, setFillColor] = useState<string>("rgba(0,0,0,0)");
-  const [strokeWidth, setStrokeWidth] = useState<number>(3);
 
   // ---- Undo/Redo History ----
   type HistoryEntry = { json: string; panX: number; panY: number };
@@ -39,14 +32,14 @@ const GameScenePage: React.FC = () => {
   const MAX_HISTORY = 50;
 
   const getPan = () => {
-    const canvas = fabricRef.current;
+    const canvas = canvasRef.current;
     if (!canvas) return { panX: 0, panY: 0 };
     const vpt = canvas.viewportTransform || fabric.iMatrix.concat();
     return { panX: vpt[4] || 0, panY: vpt[5] || 0 };
   };
 
   const setPanKeepingZoom = (panX: number, panY: number) => {
-    const canvas = fabricRef.current;
+    const canvas = canvasRef.current;
     if (!canvas) return;
     const vpt = (canvas.viewportTransform || fabric.iMatrix.concat()).slice() as number[];
     const zoom = canvas.getZoom();
@@ -58,9 +51,10 @@ const GameScenePage: React.FC = () => {
   };
 
   const makeSnapshot = (): HistoryEntry | null => {
-    const canvas = fabricRef.current;
+    const canvas = canvasRef.current;
     if (!canvas) return null;
     const json = JSON.stringify(canvas.toJSON());
+    console.log("snapshot", canvas.toJSON());
     const { panX, panY } = getPan();
     return { json, panX, panY };
   };
@@ -76,7 +70,7 @@ const GameScenePage: React.FC = () => {
   };
 
   const applyState = (entry: HistoryEntry | undefined, onDone?: () => void) => {
-    const canvas = fabricRef.current;
+    const canvas = canvasRef.current;
     if (!canvas || !entry) return;
     isRestoringRef.current = true;
     canvas.loadFromJSON(entry.json, () => {
@@ -110,7 +104,7 @@ const GameScenePage: React.FC = () => {
 
   // Capture initial state once canvas is ready
   useEffect(() => {
-    const canvas = fabricRef.current;
+    const canvas = canvasRef.current;
     if (!canvas) return;
     // small timeout to ensure initial sizing applied
     setTimeout(() => {
@@ -122,7 +116,7 @@ const GameScenePage: React.FC = () => {
 
   // Update tool specifics (drawing mode, selection, brush)
   useEffect(() => {
-    const canvas = fabricRef.current;
+    const canvas = canvasRef.current;
     if (!canvas) return;
 
     // // reset modes !!layers logic
@@ -133,17 +127,17 @@ const GameScenePage: React.FC = () => {
     // });
 
     // cursors for hand tool
-    if (tool === "moveLayer") {
-      canvas.defaultCursor = "move";
-      canvas.hoverCursor = "move";
-    }
-    applyLayerPropsToObjects(canvas, tool);
+    // if (tool === "moveLayer") {
+    //   canvas.defaultCursor = "move";
+    //   canvas.hoverCursor = "move";
+    // }
+    // applyLayerPropsToObjects(canvas, tool);
     canvas.renderAll();
-  }, [tool, strokeColor, strokeWidth]);
+  });
 
   // Pointer handlers for shapes and text
   useEffect(() => {
-    const canvas = fabricRef.current;
+    const canvas = canvasRef.current;
     if (!canvas) return;
 
     const onMouseDown = (opt: fabric.TPointerEventInfo<MouseEvent>) => {
@@ -194,18 +188,24 @@ const GameScenePage: React.FC = () => {
       //   return;
       // }
     };
-  }, [tool, strokeColor, strokeWidth, fillColor]);
+  });
 
   // Capture changes for various canvas events
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const onObjectModified = () => {
-      console.log("object modified");
+    const onObjectModified = (e) => {
+      captureState();
+      const obj = e.target;
+      const transform = e.transform;
+      SceneHistoryStore.addUndoHistoryItem("modify", obj.UUID, transform.original);
+      console.log("object modified", transform);
+    };
+    const onPathCreated = () => {
+      console.log("path created");
       captureState();
     };
-    const onPathCreated = () => captureState();
     const onEditingExited = () => captureState();
 
     canvas.on("object:modified", onObjectModified);
@@ -214,7 +214,18 @@ const GameScenePage: React.FC = () => {
     // text editing finished
     canvas.on("editing:exited", onEditingExited as any);
     canvas.on("object:added", (e) => {
-      console.log("object added", e);
+      captureState();
+
+      const obj = e.target;
+      obj.UUID = generateUUID();
+      obj.layerUUID = SceneStore.activeLayerId;
+      SceneHistoryStore.addUndoHistoryItem("add", obj.UUID, obj.toJSON());
+      console.log("object added", obj.toJSON());
+    });
+    canvas.on("object:removed", (e) => {
+      const obj = e.target;
+      SceneHistoryStore.addUndoHistoryItem("remove", obj.UUID, obj.toJSON());
+      console.log("object added", obj.toJSON());
     });
 
     return () => {
@@ -225,7 +236,7 @@ const GameScenePage: React.FC = () => {
   }, []);
 
   const handleAddImage = (file: File) => {
-    const canvas = fabricRef.current;
+    const canvas = canvasRef.current;
     if (!canvas) return;
     if (!file.type.startsWith("image/")) return;
 
@@ -256,7 +267,7 @@ const GameScenePage: React.FC = () => {
           canvas.centerObject(img);
           canvas.setActiveObject(img);
           canvas.requestRenderAll();
-          setTool("select");
+          // setTool("select");
           captureState();
         },
         { crossOrigin: "anonymous" },
@@ -275,7 +286,7 @@ const GameScenePage: React.FC = () => {
         <ToolMenu
           onAddImage={handleAddImage}
           onClear={() => {
-            const canvas = fabricRef.current;
+            const canvas = canvasRef.current;
             if (!canvas) return;
             canvas.clear();
             canvas.setBackgroundColor("#f8fafc", () => canvas.requestRenderAll());
