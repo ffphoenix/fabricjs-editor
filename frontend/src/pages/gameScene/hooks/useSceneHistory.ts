@@ -1,14 +1,22 @@
 import { type MutableRefObject, useEffect } from "react";
 import SceneHistoryStore from "../store/SceneHistoryStore";
-import type { Canvas, ModifiedEvent } from "fabric";
+import { type Canvas, type ModifiedEvent } from "fabric";
 import isKeyDownInterceptable from "../utils/isKeyDownInterceptable";
 import undoSceneAction from "../store/actions/history/undoSceneAction";
 import redoSceneAction from "../store/actions/history/redoSceneAction";
+import * as fabric from "fabric";
 
 export default function useSceneHistory(canvasRef: MutableRefObject<Canvas | null>) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    const getPan = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return { x: 0, y: 0 };
+      const vpt = canvas.viewportTransform || fabric.iMatrix.concat();
+      return { x: vpt[4] || 0, y: vpt[5] || 0 };
+    };
 
     const onObjectAddedDisposer = canvas.on("object:added", (e) => {
       const object = e.target;
@@ -19,7 +27,7 @@ export default function useSceneHistory(canvasRef: MutableRefObject<Canvas | nul
       }
       if (!object.UUID) throw new Error("Object must have UUID");
 
-      SceneHistoryStore.addUndoHistoryItem("add", object.UUID, object.toJSON());
+      SceneHistoryStore.addUndoHistoryItem("add", object.UUID, getPan(), object.toJSON());
     });
 
     const onModify = (e: ModifiedEvent) => {
@@ -33,7 +41,7 @@ export default function useSceneHistory(canvasRef: MutableRefObject<Canvas | nul
       if (!object.UUID) throw new Error("Object must have UUID");
       if (!transform) throw new Error("Object must have transform:" + JSON.stringify(e));
       console.log("modify", e);
-      SceneHistoryStore.addUndoHistoryItem("modify", object.UUID, transform.original);
+      SceneHistoryStore.addUndoHistoryItem("modify", object.UUID, getPan(), transform.original);
     };
     const onObjectModifiedDisposer = canvas.on("object:modified", onModify);
 
@@ -46,7 +54,7 @@ export default function useSceneHistory(canvasRef: MutableRefObject<Canvas | nul
       }
       if (!object.UUID) throw new Error("Object must have UUID");
 
-      SceneHistoryStore.addUndoHistoryItem("remove", object.UUID, object.toJSON());
+      SceneHistoryStore.addUndoHistoryItem("remove", object.UUID, getPan(), object.toJSON());
     });
 
     const onKeyDown = (e: KeyboardEvent) => {

@@ -13,8 +13,8 @@ const undoSceneAction = (canvasRef: MutableRefObject<Canvas | null>) => {
   const prevItem = doHistoryAction("undo", canvas, historyItem);
   const popHistoryItem = SceneHistoryStore.undoHistory.pop();
   if (popHistoryItem) {
-    const { action, UUID } = popHistoryItem;
-    SceneHistoryStore.addRedoHistoryItem(action, UUID, prevItem ?? {});
+    const { action, UUID, pan } = popHistoryItem;
+    SceneHistoryStore.addRedoHistoryItem(action, UUID, pan, prevItem ?? {});
   }
   canvas.requestRenderAll();
 };

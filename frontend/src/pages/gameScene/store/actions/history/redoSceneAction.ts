@@ -13,8 +13,8 @@ const redoSceneAction = (canvasRef: MutableRefObject<Canvas | null>) => {
   const prevItem = doHistoryAction("redo", canvas, historyItem);
   const popHistoryItem = SceneHistoryStore.redoHistory.pop();
   if (popHistoryItem) {
-    const { action, UUID } = popHistoryItem;
-    SceneHistoryStore.addUndoHistoryItem(action, UUID, prevItem ?? {});
+    const { action, UUID, pan } = popHistoryItem;
+    SceneHistoryStore.addUndoHistoryItem(action, UUID, pan, prevItem ?? {});
   }
   canvas.requestRenderAll();
 };

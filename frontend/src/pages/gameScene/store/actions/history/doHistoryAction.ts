@@ -1,30 +1,44 @@
 import { type HistoryItem } from "../../SceneHistoryStore";
-import { type Canvas, FabricObject, util } from "fabric";
+import { ActiveSelection, type Canvas, FabricObject, iMatrix, type TMat2D, util } from "fabric";
 import { getFabricObject } from "../../../utils/getFabricObject";
 import getPrevObjectPropsDiff from "../../../utils/getPrevObjectPropsDiff";
 import { toJS } from "mobx";
 
-const removeObject = (canvas: Canvas, uuid: string) => {
-  const object = getFabricObject(canvas, uuid);
-  if (!object) throw new Error(`Cannot delete object - object not found by UUID: ${uuid}`);
+const setPanKeepingZoom = (canvas: Canvas, historyItem: HistoryItem) => {
+  const vpt = (canvas.viewportTransform || iMatrix.concat()).slice();
+  const zoom = canvas.getZoom();
+  vpt[0] = zoom; // scaleX
+  vpt[3] = zoom; // scaleY
+  vpt[4] = historyItem.pan.x; // translateX
+  vpt[5] = historyItem.pan.y; // translateY
+  canvas.setViewportTransform(vpt as TMat2D);
+  canvas.renderAll();
+};
+
+const removeObject = (canvas: Canvas, historyItem: HistoryItem) => {
+  const object = getFabricObject(canvas, historyItem.UUID);
+  if (!object) throw new Error(`Cannot delete object - object not found by UUID: ${historyItem.UUID}`);
   object.set({ isChangedByHistory: true });
   canvas.remove(object);
 };
 
-const modifyObject = (canvas: Canvas, uuid: string, item: Partial<FabricObject>) => {
-  const object = getFabricObject(canvas, uuid);
-  if (!object) throw new Error(`Cannot modify object - object not found by UUID: ${uuid}`);
+const modifyObject = (canvas: Canvas, historyItem: HistoryItem) => {
+  const object = getFabricObject(canvas, historyItem.UUID);
+  if (!object) throw new Error(`Cannot modify object - object not found by UUID: ${historyItem.UUID}`);
+  const selectedObjects = canvas.getActiveObjects();
   canvas.discardActiveObject();
-  const prevObjectState = getPrevObjectPropsDiff(toJS(object), item);
-  object.set({ ...item, isChangedByHistory: true });
+  const prevObjectState = getPrevObjectPropsDiff(toJS(object), historyItem.item);
+  object.set({ ...historyItem.item, isChangedByHistory: true });
   object.setCoords();
-  canvas.setActiveObject(object);
-  console.log("-------modify action ", prevObjectState, toJS(item));
+  const selection = new ActiveSelection(selectedObjects, { canvas });
+  canvas.setActiveObject(selection);
+
+  setPanKeepingZoom(canvas, historyItem);
   return prevObjectState;
 };
 
-const addObject = (canvas: Canvas, item: Partial<FabricObject>) => {
-  util.enlivenObjects<FabricObject>([item]).then((enlivenedObjects) => {
+const addObject = (canvas: Canvas, historyItem: HistoryItem) => {
+  util.enlivenObjects<FabricObject>([historyItem.item]).then((enlivenedObjects) => {
     enlivenedObjects.forEach((object) => {
       object.set({ isEnlivened: true, isChangedByHistory: true });
       canvas.add(object);
@@ -38,15 +52,15 @@ export const doHistoryAction = (
   historyItem: HistoryItem,
 ): Partial<FabricObject> => {
   const undoMapByAction = {
-    add: () => removeObject(canvas, historyItem.UUID),
-    modify: () => modifyObject(canvas, historyItem.UUID, historyItem.item),
-    remove: () => addObject(canvas, historyItem.item),
+    add: () => removeObject(canvas, historyItem),
+    modify: () => modifyObject(canvas, historyItem),
+    remove: () => addObject(canvas, historyItem),
   };
 
   const redoMapByAction = {
-    add: () => addObject(canvas, historyItem.item),
-    modify: () => modifyObject(canvas, historyItem.UUID, historyItem.item),
-    remove: () => removeObject(canvas, historyItem.UUID),
+    add: () => addObject(canvas, historyItem),
+    modify: () => modifyObject(canvas, historyItem),
+    remove: () => removeObject(canvas, historyItem),
   };
 
   const actionMap = queue === "undo" ? undoMapByAction : redoMapByAction;
