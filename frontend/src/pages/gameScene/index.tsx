@@ -21,6 +21,7 @@ const GameScenePage: React.FC = () => {
   useCanvasMouseEvents(canvasRef);
   useKeyboardHotkeys(canvasRef);
   useSceneHistory(canvasRef);
+
   console.log("GameScenePage rendered");
 
   const getPan = () => {

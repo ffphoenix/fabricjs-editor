@@ -22,7 +22,6 @@ const sceneHistoryStore = makeAutoObservable<SceneHistory>({
   undoHistory: [],
   redoHistory: [],
   addUndoHistoryItem: (action, UUID, item = {}) => {
-    //console.log("addUndoHistoryItem", action, UUID, item);
     sceneHistoryStore.undoHistory.push({ action, UUID, item });
 
     if (sceneHistoryStore.undoHistory.length > sceneHistoryStore.maxHistoryLength) {
@@ -31,7 +30,6 @@ const sceneHistoryStore = makeAutoObservable<SceneHistory>({
     sceneHistoryStore.redoHistory = [];
   },
   addRedoHistoryItem: (action, UUID, item = {}) => {
-    //console.log("addRedoHistoryItem", action, UUID, item);
     sceneHistoryStore.redoHistory.push({ action, UUID, item });
 
     if (sceneHistoryStore.redoHistory.length > sceneHistoryStore.maxHistoryLength) {
