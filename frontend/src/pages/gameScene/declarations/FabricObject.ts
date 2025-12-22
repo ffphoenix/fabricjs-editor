@@ -5,12 +5,19 @@ declare module "fabric" {
   interface FabricObject {
     layerUUID?: string;
     UUID?: string;
+    isEditing?: boolean;
+    isEnlivened?: boolean;
+    isChangedByHistory?: boolean;
+    changeMadeBy?: "self" | "websocket";
   }
   // to have the properties typed in the exported object
   interface SerializedObjectProps {
     layerUUID?: string;
     UUID?: string;
+    isEditing?: boolean;
+    isEnlivened?: boolean;
+    changeMadeBy?: "self" | "websocket";
   }
 }
 
-FabricObject.customProperties = ["UUID", "layerUUID"];
+FabricObject.customProperties = ["UUID", "layerUUID", "isEnlivened", "isChangedByHistory", "isEditing", "changeMadeBy"];

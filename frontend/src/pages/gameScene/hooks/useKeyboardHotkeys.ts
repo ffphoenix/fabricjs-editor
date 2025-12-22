@@ -1,6 +1,7 @@
 import { type MutableRefObject, useEffect } from "react";
 import type { Canvas } from "fabric";
-import undoSceneAction from "../store/actions/undoSceneAction";
+import undoSceneAction from "../store/actions/history/undoSceneAction";
+import isKeyDownInterceptable from "../utils/isKeyDownInterceptable";
 
 const handleDeleteSelected = (canvas: Canvas) => {
   if (!canvas) return;
@@ -18,16 +19,7 @@ const useKeyboardHotkeys = (canvasRef: MutableRefObject<Canvas | null>) => {
     const canvas = canvasRef.current;
 
     const onKeyDown = (e: KeyboardEvent) => {
-      // ignore when typing in inputs/textareas or contenteditable
-      const target = e.target as HTMLElement | null;
-      const tag = (target?.tagName || "").toLowerCase();
-      const isEditable = tag === "input" || tag === "textarea" || (target && (target as HTMLElement).isContentEditable);
-
-      // If an IText is actively editing, do not intercept
-      const activeObj = canvas?.getActiveObject() as any;
-      const isFabricTextEditing = !!(activeObj && typeof activeObj.isEditing === "boolean" && activeObj.isEditing);
-
-      if (isEditable || isFabricTextEditing) return;
+      if (!isKeyDownInterceptable(e, canvas)) return;
 
       if (e.key === "Delete" || e.key === "Backspace") {
         console.log("Delete/Backspace pressed");
@@ -61,25 +53,6 @@ const useKeyboardHotkeys = (canvasRef: MutableRefObject<Canvas | null>) => {
         //   e.preventDefault();
         //   return;
         // }
-      }
-
-      // Undo / Redo shortcuts
-      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
-      if (isCtrlOrMeta && e.key.toLowerCase() === "z") {
-        if (e.shiftKey) {
-          // redo();
-        } else {
-          // undo();
-        }
-        undoSceneAction(canvasRef);
-        console.log("Undo/Redo pressed");
-        e.preventDefault();
-        return;
-      }
-      if (isCtrlOrMeta && e.key.toLowerCase() === "y") {
-        // redo();
-        e.preventDefault();
-        return;
       }
     };
 

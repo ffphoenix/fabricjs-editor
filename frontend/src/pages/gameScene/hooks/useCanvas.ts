@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import handleCanvasResize from "../core/handleCanvasResize";
 import type { CanvasOptions } from "fabric";
+import { generateUUID } from "../utils/uuid";
+import SceneStore from "../store/SceneStore";
 
 const defaultCanvasOptions: Partial<CanvasOptions> = {
   backgroundColor: "#f8fafc",
@@ -24,8 +26,19 @@ export default (canvasOptions: Partial<CanvasOptions>) => {
     const eventResizeHandler = () => handleCanvasResize(canvas, containerRef);
     window.addEventListener("resize", eventResizeHandler);
 
+    const onObjectAddedDisposer = canvas.on("object:added", (e) => {
+      const object = e.target;
+      if (!object || object.changeMadeBy !== undefined || object.isEnlivened) return;
+      object.set({
+        UUID: generateUUID(),
+        layerUUID: SceneStore.activeLayerId,
+        changeMadeBy: "self",
+      });
+    });
+
     return () => {
       window.removeEventListener("resize", eventResizeHandler);
+      onObjectAddedDisposer();
       canvas.dispose();
       canvasRef.current = null;
     };

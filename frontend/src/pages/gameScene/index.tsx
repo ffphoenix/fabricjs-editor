@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import * as fabric from "fabric";
 import ToolMenu from "./components/ToolMenu";
 import "./style.css";
@@ -6,12 +6,10 @@ import useCanvas from "./hooks/useCanvas";
 import ZoomControls from "./components/ZoomControls";
 import useWheelZoomHandler from "./hooks/useWheelZoomHandler";
 import SceneStore from "./store/SceneStore";
-import applyLayerPropsToObjects from "./core/applyLayerPropsToObjects";
 import useCanvasMouseEvents from "./hooks/useCanvasMouseEvents";
 import useKeyboardHotkeys from "./hooks/useKeyboardHotkeys";
-import { generateUUID } from "./utils/uuid";
+import useSceneHistory from "./hooks/useSceneHistory";
 import "./declarations/FabricObject";
-import SceneHistoryStore from "./store/SceneHistoryStore";
 
 const GameScenePage: React.FC = () => {
   const { canvasRef, canvasElRef, containerRef } = useCanvas({
@@ -22,14 +20,8 @@ const GameScenePage: React.FC = () => {
   useWheelZoomHandler(canvasRef);
   useCanvasMouseEvents(canvasRef);
   useKeyboardHotkeys(canvasRef);
+  useSceneHistory(canvasRef);
   console.log("GameScenePage rendered");
-
-  // ---- Undo/Redo History ----
-  type HistoryEntry = { json: string; panX: number; panY: number };
-  const undoStackRef = useRef<HistoryEntry[]>([]);
-  const redoStackRef = useRef<HistoryEntry[]>([]);
-  const isRestoringRef = useRef<boolean>(false);
-  const MAX_HISTORY = 50;
 
   const getPan = () => {
     const canvas = canvasRef.current;
@@ -49,70 +41,6 @@ const GameScenePage: React.FC = () => {
     vpt[5] = panY; // translateY
     canvas.setViewportTransform(vpt as any);
   };
-
-  const makeSnapshot = (): HistoryEntry | null => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-    const json = JSON.stringify(canvas.toJSON());
-    console.log("snapshot", canvas.toJSON());
-    const { panX, panY } = getPan();
-    return { json, panX, panY };
-  };
-
-  const captureState = () => {
-    if (isRestoringRef.current) return; // avoid capturing while restoring
-    const snap = makeSnapshot();
-    if (!snap) return;
-    undoStackRef.current.push(snap);
-    if (undoStackRef.current.length > MAX_HISTORY) undoStackRef.current.shift();
-    // new action invalidates redo stack
-    redoStackRef.current = [];
-  };
-
-  const applyState = (entry: HistoryEntry | undefined, onDone?: () => void) => {
-    const canvas = canvasRef.current;
-    if (!canvas || !entry) return;
-    isRestoringRef.current = true;
-    canvas.loadFromJSON(entry.json, () => {
-      // keep current zoom, restore pan
-      setPanKeepingZoom(entry.panX, entry.panY);
-      canvas.renderAll();
-      isRestoringRef.current = false;
-      if (onDone) onDone();
-    });
-  };
-
-  const undo = () => {
-    // Need at least one prior state to go back to
-    if (undoStackRef.current.length < 2) return;
-    const current = undoStackRef.current.pop(); // current state
-    const prev = undoStackRef.current[undoStackRef.current.length - 1]; // previous remains on stack
-    if (!current || !prev) return;
-    // push current to redo
-    redoStackRef.current.push(current);
-    applyState(prev);
-  };
-
-  const redo = () => {
-    const next = redoStackRef.current.pop();
-    if (!next) return;
-    // push current to undo
-    const current = makeSnapshot();
-    if (current) undoStackRef.current.push(current);
-    applyState(next);
-  };
-
-  // Capture initial state once canvas is ready
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    // small timeout to ensure initial sizing applied
-    setTimeout(() => {
-      undoStackRef.current = [];
-      redoStackRef.current = [];
-      captureState();
-    }, 0);
-  }, []);
 
   // Update tool specifics (drawing mode, selection, brush)
   useEffect(() => {
@@ -191,49 +119,6 @@ const GameScenePage: React.FC = () => {
   });
 
   // Capture changes for various canvas events
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const onObjectModified = (e) => {
-      captureState();
-      const obj = e.target;
-      const transform = e.transform;
-      SceneHistoryStore.addUndoHistoryItem("modify", obj.UUID, transform.original);
-      console.log("object modified", transform);
-    };
-    const onPathCreated = () => {
-      console.log("path created");
-      captureState();
-    };
-    const onEditingExited = () => captureState();
-
-    canvas.on("object:modified", onObjectModified);
-    // free drawing path created
-    canvas.on("path:created", onPathCreated as any);
-    // text editing finished
-    canvas.on("editing:exited", onEditingExited as any);
-    canvas.on("object:added", (e) => {
-      captureState();
-
-      const obj = e.target;
-      obj.UUID = generateUUID();
-      obj.layerUUID = SceneStore.activeLayerId;
-      SceneHistoryStore.addUndoHistoryItem("add", obj.UUID, obj.toJSON());
-      console.log("object added", obj.toJSON());
-    });
-    canvas.on("object:removed", (e) => {
-      const obj = e.target;
-      SceneHistoryStore.addUndoHistoryItem("remove", obj.UUID, obj.toJSON());
-      console.log("object added", obj.toJSON());
-    });
-
-    return () => {
-      canvas.off("object:modified", onObjectModified);
-      canvas.off("path:created", onPathCreated as any);
-      canvas.off("editing:exited", onEditingExited as any);
-    };
-  }, []);
 
   const handleAddImage = (file: File) => {
     const canvas = canvasRef.current;
@@ -268,7 +153,6 @@ const GameScenePage: React.FC = () => {
           canvas.setActiveObject(img);
           canvas.requestRenderAll();
           // setTool("select");
-          captureState();
         },
         { crossOrigin: "anonymous" },
       );
@@ -290,7 +174,6 @@ const GameScenePage: React.FC = () => {
             if (!canvas) return;
             canvas.clear();
             canvas.setBackgroundColor("#f8fafc", () => canvas.requestRenderAll());
-            captureState();
           }}
         />
       </div>
