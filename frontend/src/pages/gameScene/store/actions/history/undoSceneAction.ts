@@ -10,11 +10,16 @@ const undoSceneAction = (canvasRef: MutableRefObject<Canvas | null>) => {
   const historyItem = SceneHistoryStore.latestUndoHistoryItem;
   if (!historyItem) return;
 
-  const prevItem = doHistoryAction("undo", canvas, historyItem);
-  const popHistoryItem = SceneHistoryStore.undoHistory.pop();
-  if (popHistoryItem) {
-    const { action, UUID, pan } = popHistoryItem;
-    SceneHistoryStore.addRedoHistoryItem(action, UUID, pan, prevItem ?? {});
+  try {
+    const prevItem = doHistoryAction("undo", canvas, historyItem);
+    const popHistoryItem = SceneHistoryStore.undoHistory.pop();
+    if (popHistoryItem) {
+      const { action, UUID, pan } = popHistoryItem;
+      SceneHistoryStore.addRedoHistoryItem(action, UUID, pan, prevItem ?? {});
+    }
+  } catch (e) {
+    console.error(e);
+    SceneHistoryStore.undoHistory.pop();
   }
   canvas.requestRenderAll();
 };

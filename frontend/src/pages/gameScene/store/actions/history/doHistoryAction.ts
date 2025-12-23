@@ -1,6 +1,6 @@
 import { type HistoryItem } from "../../SceneHistoryStore";
 import { ActiveSelection, type Canvas, FabricObject, iMatrix, type TMat2D, util } from "fabric";
-import { getFabricObject } from "../../../utils/getFabricObject";
+import { getFabricObjectByUuid } from "../../../utils/getFabricObjectByUuid";
 import getPrevObjectPropsDiff from "../../../utils/getPrevObjectPropsDiff";
 import { toJS } from "mobx";
 
@@ -16,14 +16,14 @@ const setPanKeepingZoom = (canvas: Canvas, historyItem: HistoryItem) => {
 };
 
 const removeObject = (canvas: Canvas, historyItem: HistoryItem) => {
-  const object = getFabricObject(canvas, historyItem.UUID);
+  const object = getFabricObjectByUuid(canvas, historyItem.UUID);
   if (!object) throw new Error(`Cannot delete object - object not found by UUID: ${historyItem.UUID}`);
   object.set({ isChangedByHistory: true });
   canvas.remove(object);
 };
 
 const modifyObject = (canvas: Canvas, historyItem: HistoryItem) => {
-  const object = getFabricObject(canvas, historyItem.UUID);
+  const object = getFabricObjectByUuid(canvas, historyItem.UUID);
   if (!object) throw new Error(`Cannot modify object - object not found by UUID: ${historyItem.UUID}`);
   const selectedObjects = canvas.getActiveObjects();
   canvas.discardActiveObject();
@@ -41,7 +41,10 @@ const addObject = (canvas: Canvas, historyItem: HistoryItem) => {
   util.enlivenObjects<FabricObject>([historyItem.item]).then((enlivenedObjects) => {
     enlivenedObjects.forEach((object) => {
       object.set({ isEnlivened: true, isChangedByHistory: true });
+      console.log("addObject", object.toObject(), toJS(historyItem.item));
       canvas.add(object);
+
+      setPanKeepingZoom(canvas, historyItem);
     });
   });
 };

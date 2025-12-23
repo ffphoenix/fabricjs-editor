@@ -10,6 +10,8 @@ import useCanvasMouseEvents from "./hooks/useCanvasMouseEvents";
 import useKeyboardHotkeys from "./hooks/useKeyboardHotkeys";
 import useSceneHistory from "./hooks/useSceneHistory";
 import "./declarations/FabricObject";
+import { autorun, toJS } from "mobx";
+import sceneHistoryStore from "./store/SceneHistoryStore";
 
 const GameScenePage: React.FC = () => {
   const { canvasRef, canvasElRef, containerRef } = useCanvas({
@@ -22,6 +24,12 @@ const GameScenePage: React.FC = () => {
   useKeyboardHotkeys(canvasRef);
   useSceneHistory(canvasRef);
 
+  autorun(
+    () => {
+      console.log("[history][Undo store updated]:", toJS(sceneHistoryStore.undoHistory));
+    },
+    { delay: 500 },
+  );
   console.log("GameScenePage rendered");
 
   const handleAddImage = (file: File) => {
