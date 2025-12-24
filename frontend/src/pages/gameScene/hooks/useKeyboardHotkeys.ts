@@ -1,6 +1,7 @@
 import { type MutableRefObject, useEffect } from "react";
 import type { Canvas } from "fabric";
 import isKeyDownInterceptable from "../utils/isKeyDownInterceptable";
+import fireObjectRemovedEvent from "../modules/sceneActions/catcher/fireObjectRemovedEvent";
 
 const handleDeleteSelected = (canvas: Canvas) => {
   if (!canvas) return;
@@ -9,6 +10,7 @@ const handleDeleteSelected = (canvas: Canvas) => {
     active.forEach((o) => canvas.remove(o));
     canvas.discardActiveObject();
     canvas.requestRenderAll();
+    fireObjectRemovedEvent(canvas, "user", active);
   }
 };
 
@@ -23,6 +25,7 @@ const useKeyboardHotkeys = (canvasRef: MutableRefObject<Canvas | null>) => {
       if (e.key === "Delete" || e.key === "Backspace") {
         console.log("Delete/Backspace pressed");
         handleDeleteSelected(canvas);
+
         // prevent navigating back on Backspace when nothing is focused
         e.preventDefault();
         return;
@@ -57,8 +60,6 @@ const useKeyboardHotkeys = (canvasRef: MutableRefObject<Canvas | null>) => {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-
-    return () => {};
   }, []);
 };
 

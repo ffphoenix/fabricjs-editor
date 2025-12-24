@@ -3,6 +3,7 @@ import { type Canvas, type TPointerEventInfo } from "fabric";
 import type { ArrowDrawingRef, MouseHandlers } from "../useSceneTools";
 import * as fabric from "fabric";
 import SceneStore from "../../../store/SceneStore";
+import fireObjectAddedEvent from "../../sceneActions/catcher/fireObjectAddedEvent";
 
 const getDrawArrowHandlers = (
   canvasRef: MutableRefObject<Canvas | null>,
@@ -96,8 +97,8 @@ const getDrawArrowHandlers = (
       selectable: true,
       objectCaching: true,
     });
+    fireObjectAddedEvent(canvas, "user", group);
     canvas.add(group);
-    canvas.setActiveObject(group);
     canvas.requestRenderAll();
   };
 

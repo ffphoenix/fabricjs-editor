@@ -5,6 +5,7 @@ import * as fabric from "fabric";
 import SceneStore from "../../../store/SceneStore";
 import getEmptyHandlers from "./getEmptyHandlers";
 import { autorun } from "mobx";
+import fireObjectAddedEvent from "../../sceneActions/catcher/fireObjectAddedEvent";
 
 const getDrawPencilHandlers = (canvasRef: MutableRefObject<Canvas | null>): MouseHandlers => {
   const canvas = canvasRef.current;
@@ -22,6 +23,16 @@ const getDrawPencilHandlers = (canvasRef: MutableRefObject<Canvas | null>): Mous
     { delay: 500 },
   );
 
-  return { ...getEmptyHandlers(), handlerDisposer: () => autorunDispose() };
+  const onPathCreatedDisposer = canvas.on("path:created", (e) => {
+    const path = e.path;
+    fireObjectAddedEvent(canvas, "user", path);
+  });
+  return {
+    ...getEmptyHandlers(),
+    handlerDisposer: () => {
+      autorunDispose();
+      onPathCreatedDisposer();
+    },
+  };
 };
 export default getDrawPencilHandlers;

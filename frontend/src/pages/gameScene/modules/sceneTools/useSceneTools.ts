@@ -110,6 +110,7 @@ const useSceneTools = (canvasRef: MutableRefObject<Canvas | null>) => {
         handlerDisposer();
       };
     });
+
     return () => {
       autorunDispose();
       unsubscribeCallbackRef.current();

@@ -3,6 +3,7 @@ import { type Canvas, type TPointerEventInfo } from "fabric";
 import type { DrawingRef, MouseHandlers } from "../useSceneTools";
 import * as fabric from "fabric";
 import SceneStore from "../../../store/SceneStore";
+import fireObjectAddedEvent from "../../sceneActions/catcher/fireObjectAddedEvent";
 
 const getDrawCircleHandlers = (canvasRef: MutableRefObject<Canvas | null>, drawingRef: DrawingRef): MouseHandlers => {
   const canvas = canvasRef.current;
@@ -46,6 +47,7 @@ const getDrawCircleHandlers = (canvasRef: MutableRefObject<Canvas | null>, drawi
     if (active) {
       active.set({ selectable: true, objectCaching: true });
     }
+    if (active) fireObjectAddedEvent(canvas, "user", active);
     canvas.requestRenderAll();
     drawingRef.current.activeObject = null;
     drawingRef.current.origin = undefined;

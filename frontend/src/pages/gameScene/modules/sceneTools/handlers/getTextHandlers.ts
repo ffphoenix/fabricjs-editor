@@ -3,6 +3,7 @@ import { type Canvas, type TPointerEventInfo } from "fabric";
 import type { MouseHandlers } from "../useSceneTools";
 import * as fabric from "fabric";
 import SceneStore from "../../../store/SceneStore";
+import fireObjectAddedEvent from "../../sceneActions/catcher/fireObjectAddedEvent";
 
 const useDrawRectHandlers = (canvasRef: MutableRefObject<Canvas | null>): MouseHandlers => {
   const canvas = canvasRef.current;
@@ -18,6 +19,7 @@ const useDrawRectHandlers = (canvasRef: MutableRefObject<Canvas | null>): MouseH
       fontSize: SceneStore.tools.textTool.fontSize,
       editable: true,
     });
+    fireObjectAddedEvent(canvas, "user", text);
     canvas.add(text);
     canvas.setActiveObject(text);
     if (typeof text.enterEditing === "function") {

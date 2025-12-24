@@ -1,43 +1,9 @@
 import { type HistoryItem } from "../SceneHistoryStore";
-import { ActiveSelection, type Canvas, FabricObject, util } from "fabric";
-import { getFabricObjectByUuid } from "../../../../utils/getFabricObjectByUuid";
-import getPrevObjectPropsDiff from "../../../../utils/getPrevObjectPropsDiff";
+import { type Canvas, FabricObject } from "fabric";
 import { toJS } from "mobx";
-import { setPanKeepingZoom } from "../../utils/setPanKeepingZoom";
-
-const removeObject = (canvas: Canvas, historyItem: HistoryItem) => {
-  const object = getFabricObjectByUuid(canvas, historyItem.UUID);
-  if (!object) throw new Error(`Cannot delete object - object not found by UUID: ${historyItem.UUID}`);
-  object.set({ isChangedByHistory: true });
-  canvas.remove(object);
-};
-
-const modifyObject = (canvas: Canvas, historyItem: HistoryItem) => {
-  const object = getFabricObjectByUuid(canvas, historyItem.UUID);
-  if (!object) throw new Error(`Cannot modify object - object not found by UUID: ${historyItem.UUID}`);
-  const selectedObjects = canvas.getActiveObjects();
-  canvas.discardActiveObject();
-  const prevObjectState = getPrevObjectPropsDiff(toJS(object), historyItem.item);
-  object.set({ ...historyItem.item, isChangedByHistory: true });
-  object.setCoords();
-  const selection = new ActiveSelection(selectedObjects, { canvas });
-  canvas.setActiveObject(selection);
-
-  setPanKeepingZoom(canvas, historyItem);
-  return prevObjectState;
-};
-
-const addObject = (canvas: Canvas, historyItem: HistoryItem) => {
-  util.enlivenObjects<FabricObject>([historyItem.item]).then((enlivenedObjects) => {
-    enlivenedObjects.forEach((object) => {
-      object.set({ isEnlivened: true, isChangedByHistory: true });
-      console.log("addObject", object.toObject(), toJS(historyItem.item));
-      canvas.add(object);
-
-      setPanKeepingZoom(canvas, historyItem);
-    });
-  });
-};
+import removeObject from "../../../sceneActions/producer/removeObject";
+import modifyObject from "../../../sceneActions/producer/modifyObject";
+import addObject from "../../../sceneActions/producer/addObject";
 
 export const doHistoryAction = (
   queue: "undo" | "redo",

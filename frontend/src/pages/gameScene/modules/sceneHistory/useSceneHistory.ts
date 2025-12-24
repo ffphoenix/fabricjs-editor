@@ -5,13 +5,20 @@ import isKeyDownInterceptable from "../../utils/isKeyDownInterceptable";
 import undoSceneAction from "./store/actions/undoSceneAction";
 import redoSceneAction from "./store/actions/redoSceneAction";
 import getPan from "./utils/getPan";
+import { autorun, toJS } from "mobx";
 
 export default function useSceneHistory(canvasRef: MutableRefObject<Canvas | null>) {
   useEffect(() => {
+    autorun(
+      () => {
+        console.log("Scene History undo changed", toJS(SceneHistoryStore.undoHistory));
+      },
+      { delay: 500 },
+    );
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const onObjectAddedDisposer = canvas.on("object:added", (e) => {
+    const onObjectAddedDisposer = canvas.on("sc:object:added", (e) => {
       const object = e.target;
       if (!object || object.changeMadeBy !== "self") return;
       if (object.isChangedByHistory) {
@@ -36,15 +43,12 @@ export default function useSceneHistory(canvasRef: MutableRefObject<Canvas | nul
       if (!transform) throw new Error("Object must have transform:" + JSON.stringify(e));
       SceneHistoryStore.addUndoHistoryItem("modify", object.UUID, getPan(canvasRef), transform.original);
     };
-    const onObjectModifiedDisposer = canvas.on("object:modified", onModify);
+    const onObjectModifiedDisposer = canvas.on("sc:object:modified", onModify);
 
-    const onObjectRemovedDisposer = canvas.on("object:removed", (e) => {
-      const object = e.target;
-      if (!object || object.changeMadeBy !== "self") return;
-      if (object.isChangedByHistory) {
-        object.set({ isChangedByHistory: false });
-        return;
-      }
+    const onObjectRemovedDisposer = canvas.on("sc:object:removed", ({ producer, target }) => {
+      const object = Array.isArray(target) ? target[0] : target;
+      console.log("[object:removed][history]", object);
+      if (producer !== "user") return;
       if (!object.UUID) throw new Error("Object must have UUID");
       console.log("[object:removed][history]", object);
       SceneHistoryStore.addUndoHistoryItem("remove", object.UUID, getPan(canvasRef), object.toJSON());
