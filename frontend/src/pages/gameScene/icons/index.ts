@@ -13,6 +13,7 @@ import { ReactComponent as LockLockedIcon } from "./lock-locked.svg?react";
 import { ReactComponent as LockUnlockedIcon } from "./lock-unlocked.svg?react";
 import { ReactComponent as MeasureIcon } from "./measure.svg?react";
 import { ReactComponent as PencilIcon } from "./pencil.svg?react";
+import { ReactComponent as PrintIcon } from "./print.svg?react";
 import { ReactComponent as PlusIcon } from "./plus.svg?react";
 import { ReactComponent as SquareIcon } from "./square.svg?react";
 import { ReactComponent as TextIcon } from "./text.svg?react";
@@ -27,6 +28,7 @@ export {
   ImageIcon,
   LayersIcon,
   PencilIcon,
+  PrintIcon,
   PlusIcon,
   XIcon,
   TrashIcon,

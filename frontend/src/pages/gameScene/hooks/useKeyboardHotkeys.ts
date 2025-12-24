@@ -1,6 +1,5 @@
 import { type MutableRefObject, useEffect } from "react";
 import type { Canvas } from "fabric";
-import undoSceneAction from "../store/actions/history/undoSceneAction";
 import isKeyDownInterceptable from "../utils/isKeyDownInterceptable";
 
 const handleDeleteSelected = (canvas: Canvas) => {

@@ -1,17 +1,15 @@
 import React from "react";
 import * as fabric from "fabric";
-import ToolMenu from "./components/ToolMenu";
+import ToolMenu from "./modules/sceneTools/components/ToolMenu";
 import "./style.css";
-import useCanvas from "./hooks/useCanvas";
-import ZoomControls from "./components/ZoomControls";
-import useWheelZoomHandler from "./hooks/useWheelZoomHandler";
 import SceneStore from "./store/SceneStore";
-import useCanvasMouseEvents from "./hooks/useCanvasMouseEvents";
+import useCanvas from "./modules/sceneCanvas/useCanvas";
+import ZoomControls from "./modules/sceneZoomControls/components/ZoomControls";
+import useWheelZoomHandler from "./modules/sceneZoomControls/useWheelZoomHandler";
+import useSceneTools from "./modules/sceneTools/useSceneTools";
 import useKeyboardHotkeys from "./hooks/useKeyboardHotkeys";
-import useSceneHistory from "./hooks/useSceneHistory";
 import "./declarations/FabricObject";
-import { autorun, toJS } from "mobx";
-import sceneHistoryStore from "./store/SceneHistoryStore";
+import useSceneHistory from "./modules/sceneHistory/useSceneHistory";
 
 const GameScenePage: React.FC = () => {
   const { canvasRef, canvasElRef, containerRef } = useCanvas({
@@ -20,16 +18,10 @@ const GameScenePage: React.FC = () => {
     preserveObjectStacking: true,
   });
   useWheelZoomHandler(canvasRef);
-  useCanvasMouseEvents(canvasRef);
+  useSceneTools(canvasRef);
   useKeyboardHotkeys(canvasRef);
   useSceneHistory(canvasRef);
 
-  autorun(
-    () => {
-      console.log("[history][Undo store updated]:", toJS(sceneHistoryStore.undoHistory));
-    },
-    { delay: 500 },
-  );
   console.log("GameScenePage rendered");
 
   const handleAddImage = (file: File) => {
@@ -81,6 +73,7 @@ const GameScenePage: React.FC = () => {
       <div className="absolute left-0 top-0 h-full p-3 border-r bg-white/90 backdrop-blur-sm z-1000">
         <ToolMenu
           onAddImage={handleAddImage}
+          printCanvas={() => console.log("Print canvas", canvasRef.current?.toJSON())}
           onClear={() => {
             const canvas = canvasRef.current;
             if (!canvas) return;
