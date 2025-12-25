@@ -1,20 +1,29 @@
 import { makeAutoObservable } from "mobx";
 import type { FabricObject } from "fabric";
+import * as fabric from "fabric";
+import type { ModifyActionType } from "../../sceneActions/types";
 
 type Action = "add" | "modify" | "remove";
 type Pan = { x: number; y: number };
+type EventItem = {
+  pan: Pan;
+  object: FabricObject | FabricObject[];
+  originalProps?: Partial<FabricObject>;
+  actionType?: ModifyActionType;
+};
 export type HistoryItem = {
   action: Action;
-  UUID: string;
-  item: Partial<FabricObject>;
+  object: FabricObject | FabricObject[];
   pan: Pan;
+  originalProps?: Partial<FabricObject>;
+  actionType?: ModifyActionType;
 };
 type SceneHistory = {
   maxHistoryLength: number;
   undoHistory: HistoryItem[];
   redoHistory: HistoryItem[];
-  addUndoHistoryItem: (action: Action, UUID: string, pan: Pan, item?: Partial<FabricObject>) => void;
-  addRedoHistoryItem: (action: Action, UUID: string, pan: Pan, item?: Partial<FabricObject>) => void;
+  addUndoHistoryItem: (action: Action, eventItem: EventItem, isRedoAction?: boolean) => void;
+  addRedoHistoryItem: (action: Action, eventItem: EventItem) => void;
   latestUndoHistoryItem: HistoryItem | undefined;
   latestRedoHistoryItem: HistoryItem | undefined;
 };
@@ -23,16 +32,19 @@ const sceneHistoryStore = makeAutoObservable<SceneHistory>({
   maxHistoryLength: 50,
   undoHistory: [],
   redoHistory: [],
-  addUndoHistoryItem: (action, UUID, pan, item = {}) => {
-    sceneHistoryStore.undoHistory.push({ action, UUID, item, pan });
+  addUndoHistoryItem: (action, eventItem: EventItem, isRedoAction = false) => {
+    console.log("addUndoHistoryItem");
+    sceneHistoryStore.undoHistory.push({ ...eventItem, action });
 
     if (sceneHistoryStore.undoHistory.length > sceneHistoryStore.maxHistoryLength) {
       sceneHistoryStore.undoHistory.shift();
     }
-    sceneHistoryStore.redoHistory = [];
+    if (!isRedoAction) {
+      sceneHistoryStore.redoHistory = [];
+    }
   },
-  addRedoHistoryItem: (action, UUID, pan, item = {}) => {
-    sceneHistoryStore.redoHistory.push({ action, UUID, item, pan });
+  addRedoHistoryItem: (action, eventItem) => {
+    sceneHistoryStore.redoHistory.push({ ...eventItem, action });
 
     if (sceneHistoryStore.redoHistory.length > sceneHistoryStore.maxHistoryLength) {
       sceneHistoryStore.redoHistory.shift();

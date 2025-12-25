@@ -10,12 +10,12 @@ const redoSceneAction = (canvasRef: MutableRefObject<Canvas | null>) => {
   const historyItem = SceneHistoryStore.latestRedoHistoryItem;
   if (!historyItem) return;
 
-  const prevItem = doHistoryAction("redo", canvas, historyItem);
-  const popHistoryItem = SceneHistoryStore.redoHistory.pop();
-  if (popHistoryItem) {
-    const { action, UUID, pan } = popHistoryItem;
-    SceneHistoryStore.addUndoHistoryItem(action, UUID, pan, prevItem ?? {});
-  }
+  // const prevItem = doHistoryAction("redo", canvas, historyItem);
+  // const popHistoryItem = SceneHistoryStore.redoHistory.pop();
+  // if (popHistoryItem) {
+  //   const { action, UUID, pan } = popHistoryItem;
+  //   SceneHistoryStore.addUndoHistoryItem(action, UUID, pan, prevItem ?? {}, true);
+  // }
   canvas.requestRenderAll();
 };
 

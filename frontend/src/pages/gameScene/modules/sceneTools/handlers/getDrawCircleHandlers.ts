@@ -47,7 +47,7 @@ const getDrawCircleHandlers = (canvasRef: MutableRefObject<Canvas | null>, drawi
     if (active) {
       active.set({ selectable: true, objectCaching: true });
     }
-    if (active) fireObjectAddedEvent(canvas, "user", active);
+    if (active) fireObjectAddedEvent(canvas, "self", active);
     canvas.requestRenderAll();
     drawingRef.current.activeObject = null;
     drawingRef.current.origin = undefined;

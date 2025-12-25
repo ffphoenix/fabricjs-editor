@@ -97,7 +97,7 @@ const getDrawArrowHandlers = (
       selectable: true,
       objectCaching: true,
     });
-    fireObjectAddedEvent(canvas, "user", group);
+    fireObjectAddedEvent(canvas, "self", group);
     canvas.add(group);
     canvas.requestRenderAll();
   };

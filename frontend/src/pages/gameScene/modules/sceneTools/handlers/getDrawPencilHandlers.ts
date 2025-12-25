@@ -25,7 +25,7 @@ const getDrawPencilHandlers = (canvasRef: MutableRefObject<Canvas | null>): Mous
 
   const onPathCreatedDisposer = canvas.on("path:created", (e) => {
     const path = e.path;
-    fireObjectAddedEvent(canvas, "user", path);
+    fireObjectAddedEvent(canvas, "self", path);
   });
   return {
     ...getEmptyHandlers(),

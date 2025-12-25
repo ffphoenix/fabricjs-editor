@@ -10,7 +10,7 @@ const handleDeleteSelected = (canvas: Canvas) => {
     active.forEach((o) => canvas.remove(o));
     canvas.discardActiveObject();
     canvas.requestRenderAll();
-    fireObjectRemovedEvent(canvas, "user", active);
+    fireObjectRemovedEvent(canvas, "self", active);
   }
 };
 
@@ -21,8 +21,7 @@ const useKeyboardHotkeys = (canvasRef: MutableRefObject<Canvas | null>) => {
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (!isKeyDownInterceptable(e, canvas)) return;
-
-      if (e.key === "Delete" || e.key === "Backspace") {
+      if (e.code === "Delete" || e.code === "Backslash") {
         console.log("Delete/Backspace pressed");
         handleDeleteSelected(canvas);
 
@@ -32,7 +31,7 @@ const useKeyboardHotkeys = (canvasRef: MutableRefObject<Canvas | null>) => {
       }
 
       // Escape: cancel measuring / arrow drawing
-      if (e.key === "Escape") {
+      if (e.code === "Escape") {
         // @TODO: refactor arrow and measuring drawing to store state
         // and remove this code
         //
