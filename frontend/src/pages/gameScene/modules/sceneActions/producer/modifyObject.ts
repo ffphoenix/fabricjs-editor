@@ -8,13 +8,13 @@ const modifyObject = (
   pan: { x: number; y: number },
 ) => {
   object.set({ ...originalProps, isChangedByHistory: true });
-  // setPanKeepingZoom(canvas, pan);
-
-  object.setCoords();
 
   if (object instanceof Group) {
     object.getObjects().forEach((o) => o.setCoords());
+  } else {
+    object.setCoords();
   }
+  setPanKeepingZoom(canvas, pan);
 };
 
 export default modifyObject;
