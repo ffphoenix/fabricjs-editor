@@ -116,7 +116,6 @@ const sceneStore: SceneStore = makeAutoObservable<SceneStore>({
   setCurrentZoom: (zoom: number) => (sceneStore.UI.currentZoom = Math.ceil(zoom * 100)),
   setContextMenu: (visible: boolean, x?: number, y?: number) => {
     sceneStore.UI.contextMenu.visible = visible;
-    console.log("setContextMenu", visible, x, y);
     if (x !== undefined) sceneStore.UI.contextMenu.x = x;
     if (y !== undefined) sceneStore.UI.contextMenu.y = y;
   },

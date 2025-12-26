@@ -9,10 +9,8 @@ const setRightClickHandler = (canvasRef: MutableRefObject<Canvas | null>) => {
 
   return canvas.on({
     "mouse:down": (options) => {
-      // SceneStore.setContextMenu(false);
       const event = options.e as MouseEvent;
       if (event.button === 2) {
-        console.log("right click down");
         SceneStore.setRightClickIsRightButtonDown(true);
         SceneStore.setRightClickStartPos({ x: event.clientX, y: event.clientY });
       }
@@ -44,13 +42,13 @@ const setRightClickHandler = (canvasRef: MutableRefObject<Canvas | null>) => {
       if (SceneStore.UI.rightClick.isPanning) {
         SceneStore.setRightClickPanning(false);
         SceneStore.setRightClickStartPos({ x: 0, y: 0 });
+        // @TODO: change to propper handling
         const activeTool = SceneStore.activeTool;
         const cursor = activeTool === "hand" ? "grab" : "default";
         canvas.setCursor(cursor);
         canvas.requestRenderAll();
         return;
       }
-      console.log("right click up");
       SceneStore.setContextMenu(true, event.clientX, event.clientY);
     },
   });

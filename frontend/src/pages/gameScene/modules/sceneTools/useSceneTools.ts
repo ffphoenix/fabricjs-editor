@@ -79,7 +79,6 @@ const useSceneTools = (canvasRef: MutableRefObject<Canvas | null>) => {
   const unsubscribeCallbackRef = useRef<() => void>(() => {});
   useEffect(() => {
     if (!canvasRef.current) return;
-    console.log("init canvas mouse events");
     const autorunDispose = autorun(() => {
       unsubscribeCallbackRef.current();
       console.log("activeTool changed", SceneStore.activeTool);
