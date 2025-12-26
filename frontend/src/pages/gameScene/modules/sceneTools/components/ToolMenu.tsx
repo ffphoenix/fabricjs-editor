@@ -1,30 +1,26 @@
-import React, { useRef } from "react";
+import React, { type MutableRefObject } from "react";
 import { Button } from "primereact/button";
-import {
-  CursorIcon,
-  LayersIcon,
-  ClearIcon,
-  ImageIcon,
-  HandIcon,
-  MeasureIcon,
-  TrashIcon,
-  PrintIcon,
-} from "../../../icons";
+import { CursorIcon, LayersIcon, ClearIcon, HandIcon, MeasureIcon, TrashIcon, PrintIcon } from "../../../icons";
 import DrawToolsMenu from "./drawToolsMenu/DrawToolsMenu";
 import TextToolMenu from "./textToolMenu/TextToolMenu";
 import "./ToolMenu.css";
 import SceneStore from "../../../store/SceneStore";
 import { observer } from "mobx-react-lite";
+import UploadImageButton from "./UploadImageButton";
+import type { Canvas } from "fabric";
 
 type Props = {
-  onClear: () => void;
-  printCanvas: () => void;
-  onAddImage: (file: File) => void;
+  canvasRef: MutableRefObject<Canvas | null>;
 };
 
-const ToolMenu: React.FC<Props> = ({ onClear, onAddImage, printCanvas }) => {
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
+const ToolMenu: React.FC<Props> = ({ canvasRef }) => {
+  const printCanvas = () => console.log("Print canvas", canvasRef.current?.toJSON());
+  const onClear = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.clear();
+    // canvas.setBackgroundColor("#f8fafc", () => canvas.requestRenderAll());
+  };
   return (
     <div className="flex h-full w-full flex-col gap-3 pb-70">
       {/* Tools */}
@@ -68,41 +64,7 @@ const ToolMenu: React.FC<Props> = ({ onClear, onAddImage, printCanvas }) => {
           onClick={() => SceneStore.setActiveTool("measure")}
           tooltip="Measure (distance)"
         />
-        <div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files && e.target.files[0];
-              if (file) {
-                onAddImage(file);
-                // clear the input so the same file can be selected again if needed
-                e.currentTarget.value = "";
-              }
-            }}
-          />
-          <Button
-            aria-label="Add Image"
-            text
-            raised
-            icon={<ImageIcon />}
-            className={"tooltip-button"}
-            onClick={() => {
-              fileInputRef.current?.click();
-            }}
-          />
-        </div>
-        <Button
-          aria-label="Print Canvas"
-          text
-          raised
-          icon={<PrintIcon />}
-          className="tooltip-button"
-          onClick={() => printCanvas()}
-          tooltip="Print Canvas"
-        />
+        <UploadImageButton canvasRef={canvasRef} />
       </div>
 
       <div className="h-px w-full bg-gray-200" />
@@ -123,6 +85,15 @@ const ToolMenu: React.FC<Props> = ({ onClear, onAddImage, printCanvas }) => {
           icon={<ClearIcon />}
           className="tooltip-button"
           onClick={onClear}
+        />
+        <Button
+          aria-label="Print Canvas"
+          text
+          raised
+          icon={<PrintIcon />}
+          className="tooltip-button"
+          onClick={() => printCanvas()}
+          tooltip="Print Canvas"
         />
       </div>
     </div>
