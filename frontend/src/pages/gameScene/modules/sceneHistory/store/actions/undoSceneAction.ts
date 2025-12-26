@@ -1,8 +1,10 @@
-import { ActiveSelection, type Canvas, type FabricObject, Group } from "fabric";
+import { type Canvas, type FabricObject } from "fabric";
 import SceneHistoryStore from "../SceneHistoryStore";
 import type { MutableRefObject } from "react";
 import doHistoryAction from "./doHistoryAction";
-import { getFabricObjectByUuid } from "../../../../utils/getFabricObjectByUuid";
+import doActionWithGroup from "./doActionWithGroup";
+import { getObjectTransformProps } from "../../utils/getObjectTransformProps";
+import { toJS } from "mobx";
 
 const undoSceneAction = (canvasRef: MutableRefObject<Canvas | null>) => {
   const canvas = canvasRef.current;
@@ -14,38 +16,23 @@ const undoSceneAction = (canvasRef: MutableRefObject<Canvas | null>) => {
   if (historyItem.action === "modify" && !historyItem.originalProps) return;
 
   try {
-    let object = historyItem.object;
     canvas.discardActiveObject();
-    if (Array.isArray(historyItem.object)) {
-      const canvasObjects = historyItem.object.map((obj) => getFabricObjectByUuid(canvas, obj.UUID));
-      object = new Group(canvasObjects);
-    }
-    console.log("undoing", object);
-    if (historyItem.originalProps) {
-      doHistoryAction(
-        "undo",
-        canvas,
-        historyItem.action,
-        object as FabricObject,
-        historyItem.pan,
-        historyItem.originalProps,
+    const { originalProps, object, action, pan } = toJS(historyItem);
+    let transformProps;
+    if (Array.isArray(object) && action === "modify") {
+      transformProps = doActionWithGroup(canvas, object as FabricObject[], (groupObject) =>
+        doHistoryAction("undo", canvas, action, groupObject, pan, originalProps),
       );
-      if (object.type === "group") {
-        console.log("undoing group", object);
-        object.removeAll();
-        // canvas.remove(object);
-        // canvas.add(...object.removeAll());
-      }
+    } else {
+      transformProps = getObjectTransformProps(object as FabricObject);
+      doHistoryAction("undo", canvas, action, object as FabricObject, pan, originalProps);
     }
-    return;
-    // const popHistoryItem = SceneHistoryStore.undoHistory.pop();
-    // if (popHistoryItem) {
-    //   const { action, UUID, pan } = popHistoryItem;
-    //   SceneHistoryStore.addRedoHistoryItem(action, UUID, pan, prevItem ?? {});
-    // }
+
+    SceneHistoryStore.popUndoHistoryItem();
+    SceneHistoryStore.addRedoHistoryItem(action, { pan, object, originalProps: transformProps });
   } catch (e) {
     console.error(e);
-    SceneHistoryStore.undoHistory.pop();
+    SceneHistoryStore.popUndoHistoryItem();
   }
   canvas.requestRenderAll();
 };

@@ -7,6 +7,8 @@ const fireObjectModifiedEvent = (canvas: Canvas, event: ModifiedEvent) => {
   const producer = target.get("changeMadeBy") ?? "self";
   if (producer !== "self") return;
 
+  if (target.get("type") === "i-text" && !transform) return;
+
   if (target.isChangedByHistory) {
     target.set({ isChangedByHistory: false });
     return;

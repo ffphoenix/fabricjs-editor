@@ -26,6 +26,8 @@ type SceneHistory = {
   addRedoHistoryItem: (action: Action, eventItem: EventItem) => void;
   latestUndoHistoryItem: HistoryItem | undefined;
   latestRedoHistoryItem: HistoryItem | undefined;
+  popUndoHistoryItem: () => HistoryItem | undefined;
+  popRedoHistoryItem: () => HistoryItem | undefined;
 };
 
 const sceneHistoryStore = makeAutoObservable<SceneHistory>({
@@ -55,6 +57,12 @@ const sceneHistoryStore = makeAutoObservable<SceneHistory>({
   },
   get latestRedoHistoryItem(): HistoryItem | undefined {
     return sceneHistoryStore.redoHistory[sceneHistoryStore.redoHistory.length - 1];
+  },
+  popUndoHistoryItem: (): HistoryItem | undefined => {
+    return sceneHistoryStore.undoHistory.pop();
+  },
+  popRedoHistoryItem: (): HistoryItem | undefined => {
+    return sceneHistoryStore.redoHistory.pop();
   },
 });
 

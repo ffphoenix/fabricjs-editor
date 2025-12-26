@@ -38,12 +38,8 @@ export default function useSceneHistory(canvasRef: MutableRefObject<Canvas | nul
     });
 
     const onObjectRemovedDisposer = canvas.on("sc:object:removed", ({ producer, target }) => {
-      const object = Array.isArray(target) ? target[0] : target;
-      console.log("[object:removed][history]", object);
       if (producer !== "self") return;
-      if (!object.UUID) throw new Error("Object must have UUID");
-      console.log("[object:removed][history]", object);
-      SceneHistoryStore.addUndoHistoryItem("remove", { pan: getPan(canvasRef), object });
+      SceneHistoryStore.addUndoHistoryItem("remove", { pan: getPan(canvasRef), object: target });
     });
 
     const onKeyDown = (e: KeyboardEvent) => {

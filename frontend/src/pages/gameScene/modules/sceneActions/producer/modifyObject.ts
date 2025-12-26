@@ -1,4 +1,4 @@
-import { type Canvas, type FabricObject } from "fabric";
+import { type Canvas, type FabricObject, Group } from "fabric";
 import { setPanKeepingZoom } from "../../sceneHistory/utils/setPanKeepingZoom";
 
 const modifyObject = (
@@ -8,9 +8,13 @@ const modifyObject = (
   pan: { x: number; y: number },
 ) => {
   object.set({ ...originalProps, isChangedByHistory: true });
+  // setPanKeepingZoom(canvas, pan);
+
   object.setCoords();
 
-  setPanKeepingZoom(canvas, pan);
+  if (object instanceof Group) {
+    object.getObjects().forEach((o) => o.setCoords());
+  }
 };
 
 export default modifyObject;

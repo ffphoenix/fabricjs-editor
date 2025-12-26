@@ -9,7 +9,7 @@ export const doHistoryAction = (
   action: "add" | "modify" | "remove",
   object: FabricObject,
   pan: { x: number; y: number },
-  originalProps: Partial<FabricObject>,
+  originalProps: Partial<FabricObject> = {},
 ) => {
   const undoMapByAction = {
     add: () => removeObject(canvas, object),
