@@ -38,8 +38,19 @@ type SceneStore = {
   };
   UI: {
     currentZoom: number;
+    rightClick: {
+      isRightButtonDown: boolean;
+      isPanning: boolean;
+      startPos: { x: number; y: number } | null;
+    };
+    contextMenu: {
+      visible: boolean;
+      x: number;
+      y: number;
+    };
   };
   setCurrentZoom: (zoom: number) => void;
+  setContextMenu: (visible: boolean, x?: number, y?: number) => void;
   getLayerById: (layerId: string) => SceneLayer | undefined;
   activeLayerId: string;
   currentZoom: number;
@@ -57,11 +68,24 @@ type SceneStore = {
   setTextToolFontStyle: (style: "normal" | "italic") => void;
   setTextToolFontFamily: (family: string) => void;
   setDrawToolFillColorTransparent: () => void;
+  setRightClickPanning: (isPanning: boolean) => void;
+  setRightClickStartPos: (pos: { x: number; y: number }) => void;
+  setRightClickIsRightButtonDown: (isRightButtonDown: boolean) => void;
 };
 
 const sceneStore: SceneStore = makeAutoObservable<SceneStore>({
   UI: {
     currentZoom: 100,
+    rightClick: {
+      isRightButtonDown: false,
+      isPanning: false,
+      startPos: null,
+    },
+    contextMenu: {
+      visible: false,
+      x: 0,
+      y: 0,
+    },
   },
   tools: {
     active: "select",
@@ -90,6 +114,12 @@ const sceneStore: SceneStore = makeAutoObservable<SceneStore>({
     list: [{ id: "background", name: "Background", visible: true, locked: false }],
   },
   setCurrentZoom: (zoom: number) => (sceneStore.UI.currentZoom = Math.ceil(zoom * 100)),
+  setContextMenu: (visible: boolean, x?: number, y?: number) => {
+    sceneStore.UI.contextMenu.visible = visible;
+    console.log("setContextMenu", visible, x, y);
+    if (x !== undefined) sceneStore.UI.contextMenu.x = x;
+    if (y !== undefined) sceneStore.UI.contextMenu.y = y;
+  },
   get currentZoom(): number {
     return sceneStore.UI.currentZoom;
   },
@@ -120,6 +150,10 @@ const sceneStore: SceneStore = makeAutoObservable<SceneStore>({
   setTextToolFontStyle: (style: "normal" | "italic") => (sceneStore.tools.textTool.fontStyle = style),
   setTextToolFontFamily: (family: string) => (sceneStore.tools.textTool.fontFamily = family),
   setDrawToolFillColorTransparent: () => (sceneStore.tools.drawTools.fillColor = "rgba(0,0,0,0)"),
+  setRightClickPanning: (isPanning: boolean) => (sceneStore.UI.rightClick.isPanning = isPanning),
+  setRightClickStartPos: (pos: { x: number; y: number }) => (sceneStore.UI.rightClick.startPos = pos),
+  setRightClickIsRightButtonDown: (isRightButtonDown: boolean) =>
+    (sceneStore.UI.rightClick.isRightButtonDown = isRightButtonDown),
 });
 
 export default sceneStore;

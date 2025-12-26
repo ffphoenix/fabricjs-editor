@@ -11,6 +11,7 @@ import getDrawArrowHandlers from "./handlers/getDrawArrowHandlers";
 import getDrawPencilHandlers from "./handlers/getDrawPencilHandlers";
 import getTextHandlers from "./handlers/getTextHandlers";
 import getMeasureHandlers from "./handlers/getMeasureHandlers";
+import setRightClickHandler from "./setRightClickHandler";
 
 export type MouseHandlers = {
   onMouseDown: (options: TPointerEventInfo) => void;
@@ -111,7 +112,9 @@ const useSceneTools = (canvasRef: MutableRefObject<Canvas | null>) => {
       };
     });
 
+    const rightClickEventDisposer = setRightClickHandler(canvasRef);
     return () => {
+      rightClickEventDisposer();
       autorunDispose();
       unsubscribeCallbackRef.current();
     };

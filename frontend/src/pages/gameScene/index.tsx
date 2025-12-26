@@ -10,12 +10,15 @@ import useSceneTools from "./modules/sceneTools/useSceneTools";
 import useKeyboardHotkeys from "./hooks/useKeyboardHotkeys";
 import "./declarations/FabricObject";
 import useSceneHistory from "./modules/sceneHistory/useSceneHistory";
+import SceneContextMenu from "./modules/sceneTools/components/SceneContextMenu";
 
 const GameScenePage: React.FC = () => {
   const { canvasRef, canvasElRef, containerRef } = useCanvas({
     backgroundColor: "#f8fafc",
     selection: true,
     preserveObjectStacking: true,
+    fireRightClick: true,
+    stopContextMenu: true,
   });
   useWheelZoomHandler(canvasRef);
   useSceneTools(canvasRef);
@@ -88,6 +91,7 @@ const GameScenePage: React.FC = () => {
         <canvas ref={canvasElRef} />
         <ZoomControls canvasRef={canvasRef} />
       </div>
+      <SceneContextMenu />
     </div>
   );
 };
