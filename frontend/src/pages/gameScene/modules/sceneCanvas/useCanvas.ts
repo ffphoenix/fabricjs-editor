@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import handleCanvasResize from "./handleCanvasResize";
-import type { CanvasOptions } from "fabric";
+import { type CanvasOptions, FabricImage, Pattern } from "fabric";
 import { generateUUID } from "../../utils/uuid";
 import SceneStore from "../../store/SceneStore";
 import fireObjectModifiedEvent from "../sceneActions/catcher/fireObjectModifiedEvent";
@@ -19,10 +19,11 @@ export default (canvasOptions: Partial<CanvasOptions>) => {
 
   useEffect(() => {
     if (!canvasElRef.current) return;
-    console.log("init canvas");
-    const canvas = new fabric.Canvas(canvasElRef.current, { defaultCanvasOptions, ...canvasOptions });
+    const canvas = new fabric.Canvas(canvasElRef.current, {
+      defaultCanvasOptions,
+      ...canvasOptions,
+    });
     canvasRef.current = canvas;
-
     handleCanvasResize(canvas, containerRef);
     const eventResizeHandler = () => handleCanvasResize(canvas, containerRef);
     window.addEventListener("resize", eventResizeHandler);
