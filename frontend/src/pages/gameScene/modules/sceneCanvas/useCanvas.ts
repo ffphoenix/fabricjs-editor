@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import handleCanvasResize from "./handleCanvasResize";
-import { type CanvasOptions, FabricImage, Pattern } from "fabric";
+import { type CanvasOptions } from "fabric";
 import { generateUUID } from "../../utils/uuid";
 import SceneStore from "../../store/SceneStore";
 import fireObjectModifiedEvent from "../sceneActions/catcher/fireObjectModifiedEvent";
