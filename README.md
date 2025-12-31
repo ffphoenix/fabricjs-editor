@@ -60,18 +60,12 @@ src/
 
 ### Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/storyteller-scene.git
-   cd storyteller-scene
-   ```
-
-2. Install dependencies:
+1. Install dependencies:
    ```bash
    yarn install
    ```
 
-3. Start the development server:
+2. Start the development server:
    ```bash
    yarn dev
    ```
