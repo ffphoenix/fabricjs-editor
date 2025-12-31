@@ -1,0 +1,28 @@
+.tools-menu-overlay
+{
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 200px;
+    top: 0 !important;
+    left: 40px !important;
+    right: auto !important;
+    &:before {
+
+        border: none !important;
+    }
+    &:after {
+        border: none !important;
+    }
+    .p-overlaypanel-content {
+        padding: 0 !important;
+    }
+}
+
+.tools-menu-overlay-anchor {
+    max-height: 0;
+    width: 32px;
+    position: relative;
+    display: inline-block;
+    padding: 0;
+    margin: 0;
+}

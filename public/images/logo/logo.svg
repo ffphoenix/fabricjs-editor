@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="150" height="40" viewBox="0 0 150 40" role="img" aria-labelledby="title desc">
+    <title id="title">Storyteller D20 Logo</title>
+    <desc id="desc">A horizontal D20 icon followed by the text Storyteller.</desc>
+
+    <!-- D20 icon -->
+    <g transform="translate(4,4) scale(0.9)" stroke-linejoin="round" stroke-linecap="round">
+        <!-- outer shell -->
+        <polygon points="20,2 31,12 30,26 23,36 17,36 10,26 9,12"
+                 fill="#111827" stroke="#000" stroke-width="1"/>
+        <!-- inner facet lines -->
+        <path d="M20 2 L20 36" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1"/>
+        <path d="M31 12 L17 36" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1"/>
+        <path d="M9 12 L23 36" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1"/>
+        <path d="M31 12 L20 22 L9 12" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+        <ellipse cx="24" cy="10" rx="1.5" ry="1.3" fill="#ffffff" fill-opacity="0.12"/>
+        <text x="20" y="36" font-family="Helvetica, Arial, sans-serif" font-size="8"
+              fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="700">20</text>
+    </g>
+
+    <!-- Text -->
+    <text x="60" y="26"
+          font-family="Georgia, 'Times New Roman', serif"
+          font-size="20" fill="#111827">
+        Storyteller
+    </text>
+</svg>
