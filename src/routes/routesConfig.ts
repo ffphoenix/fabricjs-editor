@@ -1,15 +1,15 @@
-import GameLayout from "../layouts/Layout";
+import Layout from "../layouts/Layout";
 import { type RouteObject } from "react-router";
-import GamePage from "../pages/gameScene";
+import EditorPage from "../pages/editor";
 
 const routes: RouteObject[] = [
   {
     path: "/",
-    Component: GameLayout,
+    Component: Layout,
     children: [
       {
         path: "/",
-        Component: GamePage,
+        Component: EditorPage,
       },
     ],
   },
