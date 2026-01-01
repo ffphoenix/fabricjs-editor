@@ -1,6 +1,6 @@
-# About 
+# 🎨 Fabric.js Editor
 
-An interactive digital canvas designed. Built with React, Fabric.js, and MobX.
+An interactive digital canvas designed and built using React, Fabric.js, and MobX.
 
 ## 🚀 Features
 
@@ -14,6 +14,7 @@ An interactive digital canvas designed. Built with React, Fabric.js, and MobX.
 - **Measurement Tool**: Built-in distance measurement for precise scene planning.
 - **Scene History**: Robust Undo/Redo system (supports Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z).
 - **Asset Management**: Seamlessly upload and integrate images into your scene.
+- **Layers Management**: Control object visibility, locking, and order.
 
 ## 🛠️ Technologies
 
@@ -25,30 +26,32 @@ An interactive digital canvas designed. Built with React, Fabric.js, and MobX.
 ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![PrimeReact](https://img.shields.io/badge/PrimeReact-blue?style=for-the-badge)
 
-- **Core**: React 18, TypeScript, Vite
+- **Core**: React 18, TypeScript, Vite 5
 - **Canvas Engine**: Fabric.js 6
-- **State Management**: MobX & MobX React Lite
-- **Styling**: Tailwind CSS 4
+- **State Management**: MobX 6 & MobX React Lite 4
+- **Styling**: Tailwind CSS 4, PrimeReact 10
 - **Utilities**: UUID, React Router 7
-- **Testing & Quality**: Vitest, ESLint, Prettier
+- **Testing & Quality**: Vitest, ESLint 9, Prettier
 
 ## 📂 Project Structure
 
 ```text
 src/
-├── components/       # Shared UI components
 ├── context/          # React Contexts (e.g., Theme)
 ├── icons/            # SVG icons as React components
 ├── layouts/          # Page layouts
 ├── pages/
-│   └── gameScene/    # Core canvas implementation
-│       ├── modules/  # Feature-specific canvas logic (History, Tools, Layers, Zoom)
+│   └── editor/       # Core canvas implementation
+│       ├── modules/  # Feature-specific canvas logic
+│       │   ├── sceneCanvas       # Canvas initialization and resizing
+│       │   ├── sceneHistory      # Undo/Redo state management
+│       │   ├── sceneLayers       # Layer and object list management
+│       │   ├── sceneTools        # Drawing and interaction tools
+│       │   └── sceneZoomControls # Zoom and pan controls
 │       ├── store/    # MobX state stores
 │       ├── hooks/    # Scene-specific React hooks
 │       └── utils/    # Canvas-related utilities
 ├── routes/           # Application routing configuration
-├── types/            # Global TypeScript definitions
-└── utils/            # General purpose utilities
 ```
 
 ## 🏁 Getting Started
@@ -76,6 +79,7 @@ src/
 - `yarn build`: Compiles the project for production.
 - `yarn test`: Runs the test suite using Vitest.
 - `yarn lint`: Checks code for linting issues.
+- `yarn lintfix`: Automatically fixes linting issues.
 - `yarn preview`: Previews the production build locally.
 
 ## 📄 License
